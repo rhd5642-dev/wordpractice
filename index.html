@@ -298,22 +298,27 @@
                     <h4 class="font-jua text-lg text-slate-800 mb-3"><i class="fa-solid fa-plus-circle text-pink-500 me-1"></i>새 단어 추가하기</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">일본어 단어 (히라가나)</label>
-                            <input type="text" id="add-word-kana" oninput="autoFillKoreanPronunciation()" placeholder="예: ふわふわ" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
+                            <label class="block text-xs font-bold text-slate-600 mb-1">일본어 단어 (히라가나/한자)</label>
+                            <input type="text" id="add-word-kana" oninput="onTeacherKanaInput()" placeholder="예: ふわふわ 또는 猫" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">한글 발음 (자동 채움)</label>
                             <input type="text" id="add-word-pron" placeholder="예: 후와후와" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400 bg-slate-100">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">한글 뜻</label>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">한글 뜻 (자동 번역/채움)</label>
                             <input type="text" id="add-word-meaning" oninput="autoGenerateExampleSentence()" placeholder="예: 폭신폭신" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
                         </div>
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">카테고리 주제</label>
-                            <select id="add-word-cat-select" onchange="toggleCustomCategoryInput()" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400 bg-white">
-                                <!-- Populated dynamically -->
-                            </select>
+                            <label class="block text-xs font-bold text-slate-600 mb-1">카테고리 주제 및 관리</label>
+                            <div class="flex gap-2">
+                                <select id="add-word-cat-select" onchange="toggleCustomCategoryInput()" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400 bg-white text-sm">
+                                    <!-- Populated dynamically -->
+                                </select>
+                                <button type="button" onclick="deleteSelectedCategory()" title="선택한 카테고리 삭제" class="px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-600 rounded-xl font-jua text-xs border border-rose-300 transition shrink-0">
+                                    <i class="fa-solid fa-trash me-1"></i>삭제
+                                </button>
+                            </div>
                             <input type="text" id="add-word-cat-custom" placeholder="새 카테고리 이름 입력" class="w-full px-3 py-2 rounded-xl border border-amber-300 outline-none focus:ring-2 focus:ring-amber-400 mt-2 hidden">
                         </div>
                         <div class="sm:col-span-2">
@@ -1009,6 +1014,45 @@
             }
         }
 
+        function deleteSelectedCategory() {
+            const select = document.getElementById('add-word-cat-select');
+            const selectedCat = select.value;
+
+            if (selectedCat === '__NEW__') {
+                showToast('추가 모드에서는 삭제할 수 없습니다.', 'fa-circle-exclamation');
+                return;
+            }
+            if (!selectedCat) {
+                showToast('삭제할 카테고리를 선택해주세요.', 'fa-circle-exclamation');
+                return;
+            }
+
+            if (confirm(`'${selectedCat}' 카테고리를 삭제하시겠습니까?\n이 카테고리의 단어들은 '일반' 카테고리로 이동됩니다.`)) {
+                // Change words in deleted category to '일반'
+                wordList.forEach(w => {
+                    if (w.category === selectedCat) {
+                        w.category = '일반';
+                    }
+                });
+
+                localStorage.setItem('teacher_jp_words', JSON.stringify(wordList));
+                populateTeacherCategoryDropdown();
+                renderTeacherWordTable();
+                showToast(`'${selectedCat}' 카테고리가 삭제되었습니다.`, 'fa-trash');
+            }
+        }
+
+        let autoTranslateTimer = null;
+        function onTeacherKanaInput() {
+            autoFillKoreanPronunciation();
+            
+            // Debounce auto translation to avoid excessive API requests
+            clearTimeout(autoTranslateTimer);
+            autoTranslateTimer = setTimeout(() => {
+                autoTranslateJapaneseMeaning();
+            }, 600);
+        }
+
         function autoFillKoreanPronunciation() {
             const kana = document.getElementById('add-word-kana').value.trim();
             const pronInput = document.getElementById('add-word-pron');
@@ -1017,6 +1061,28 @@
                 result += HIRAGANA_TO_KOREAN_MAP[char] || char;
             }
             pronInput.value = result;
+        }
+
+        async function autoTranslateJapaneseMeaning() {
+            const kana = document.getElementById('add-word-kana').value.trim();
+            const meaningInput = document.getElementById('add-word-meaning');
+
+            if (!kana) return;
+
+            try {
+                // Free Public Translation API (Google Translate endpoint)
+                const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=ko&dt=t&q=${encodeURIComponent(kana)}`;
+                const response = await fetch(url);
+                const data = await response.json();
+
+                if (data && data[0] && data[0][0] && data[0][0][0]) {
+                    const translatedText = data[0][0][0].trim();
+                    meaningInput.value = translatedText;
+                    autoGenerateExampleSentence();
+                }
+            } catch (err) {
+                console.log('Auto translation fail:', err);
+            }
         }
 
         function autoGenerateExampleSentence() {
