@@ -98,7 +98,14 @@
                 <div class="flex items-center gap-2">
                     <span id="fc-progress-text" class="font-jua text-slate-600 text-lg">1 / 10 단어</span>
                 </div>
-                <div class="flex items-center gap-2">
+                <!-- Category Select Dropdown for Flashcard Stage -->
+                <div class="flex items-center gap-2 flex-wrap">
+                    <div class="flex items-center gap-1 bg-white border border-amber-300 rounded-xl px-2 py-1 shadow-sm">
+                        <i class="fa-solid fa-layer-group text-amber-500 text-sm"></i>
+                        <select id="fc-category-filter" onchange="onFlashcardCategoryChange()" class="font-jua text-sm text-slate-700 outline-none bg-transparent cursor-pointer">
+                            <option value="ALL">전체 카테고리</option>
+                        </select>
+                    </div>
                     <button id="fc-filter-review-btn" onclick="toggleReviewOnlyMode()" class="px-3 py-1.5 rounded-xl border border-pink-300 bg-pink-50 text-pink-600 font-jua text-sm hover:bg-pink-100 transition">
                         <i class="fa-solid fa-filter me-1"></i> 복습 모드 (잘 모르겠어요 단어)
                     </button>
@@ -195,7 +202,7 @@
                     <ul class="list-disc list-inside space-y-0.5">
                         <li><b>각코 / 킵푸</b>처럼 받침(ㄱ, ㅂ, ㅅ)을 넣으면 촉음(っ)으로 자동 변환됩니다.</li>
                         <li><b>가읏코</b>처럼 '읏'을 직접 써도 촉음(っ)이 됩니다.</li>
-                        <li><b>미캉 / 신분</b>처럼 '응/ㄴ/ㅁ' 받침은 발음(ん)이 됩니다.</li>
+                        <li><b>미캉 / 심분</b>처럼 '응/ㄴ/ㅁ' 받침은 발음(ん)이 됩니다.</li>
                     </ul>
                 </div>
 
@@ -295,7 +302,7 @@
 
                 <!-- Tab 2: Word Management -->
                 <div>
-                    <h4 class="font-jua text-lg text-slate-800 mb-3"><i class="fa-solid fa-plus-circle text-pink-500 me-1"></i>새 단어 추가하기</h4>
+                    <h4 id="teacher-form-title" class="font-jua text-lg text-slate-800 mb-3"><i class="fa-solid fa-plus-circle text-pink-500 me-1"></i>새 단어 추가하기</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-4">
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">일본어 단어 (히라가나/한자)</label>
@@ -325,9 +332,12 @@
                             <label class="block text-xs font-bold text-slate-600 mb-1">일본어 예문 + 한글 해석 (자동 생성)</label>
                             <input type="text" id="add-word-ex" placeholder="예: くもが ふわふわ しています。 (구름이 폭신폭신해요.)" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
                         </div>
-                        <div class="sm:col-span-2">
-                            <button onclick="addNewWordFromTeacher()" class="w-full py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-jua text-base shadow transition">
+                        <div class="sm:col-span-2 flex gap-2">
+                            <button id="add-word-submit-btn" onclick="addNewWordFromTeacher()" class="flex-1 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-jua text-base shadow transition">
                                 단어장에 추가하기
+                            </button>
+                            <button id="add-word-cancel-btn" onclick="cancelEditTeacherWord()" class="py-2.5 px-4 rounded-xl bg-slate-300 hover:bg-slate-400 text-slate-700 font-jua text-base transition hidden">
+                                수정 취소
                             </button>
                         </div>
                     </div>
@@ -391,8 +401,10 @@
 
         let currentFlashcardIndex = 0;
         let currentTracingIndex = 0;
+        let selectedCategoryFilter = 'ALL'; // Active flashcard category filter
+        let editingWordId = null; // Currently editing word ID
 
-        // Default Japanese Words (No Emojis, Japanese Examples)
+        // Default Japanese Words
         const DEFAULT_WORDS = [
             { id: 1, kana: 'ふわふわ', pron: '후와후와', meaning: '폭신폭신', category: '의태어', example: 'くもが ふわふわ しています。 (구름이 폭신폭신해요.)' },
             { id: 2, kana: 'みかん', pron: '미캉', meaning: '귤', category: '음식', example: 'あまい みかんを たべます。 (달콤한 귤을 먹어요.)' },
@@ -400,7 +412,7 @@
             { id: 4, kana: 'ねこ', pron: '네코', meaning: '고양이', category: '동물', example: 'かわいい ねこが ねています。 (귀여운 고양이가 자고 있어요.)' },
             { id: 5, kana: 'いぬ', pron: '이누', meaning: '개/강아지', category: '동물', example: 'いぬが はしっています。 (강아지가 달려요.)' },
             { id: 6, kana: 'さくら', pron: '사쿠라', meaning: '벚꽃', category: '자연', example: 'さくらが さきました。 (벚꽃이 피었습니다.)' },
-            { id: 7, kana: 'しんぶん', pron: '신분', meaning: '신문', category: '물건', example: 'しんぶんを よみます。 (신문을 봅니다.)' },
+            { id: 7, kana: 'しんぶん', pron: '심분', meaning: '신문', category: '물건', example: 'しんぶんを よみます。 (신문을 봅니다.)' },
             { id: 8, kana: 'きっぷ', pron: '킵푸', meaning: '표/티켓', category: '물건', example: 'でんしゃの きっぷを かいます。 (전철 표를 삽니다.)' },
             { id: 9, kana: 'ありがとう', pron: '아리가토우', meaning: '고맙습니다', category: '인사', example: 'いつも ありがとう。 (항상 고맙습니다.)' },
             { id: 10, kana: 'おはよう', pron: '오하요우', meaning: '좋은 아침', category: '인사', example: 'せんせい、おはようございます！ (선생님, 좋은 아침입니다!)' }
@@ -440,24 +452,49 @@
         };
 
         window.addEventListener('load', function() {
-            // Tab leave tracker
             document.addEventListener('visibilitychange', function() {
                 if (document.hidden) {
                     tabLeaveCount++;
                 }
             });
 
+            // Populate category dropdown for flashcards stage
+            populateFlashcardCategoryDropdown();
             // Initialize Flashcard View
             updateFlashcardUI();
             // Initialize Tracing Canvas
             initTracingCanvas();
         });
 
+        function populateFlashcardCategoryDropdown() {
+            const select = document.getElementById('fc-category-filter');
+            if (!select) return;
+
+            const categories = Array.from(new Set(wordList.map(w => w.category || '일반')));
+            let html = '<option value="ALL">전체 카테고리</option>';
+            categories.forEach(cat => {
+                html += `<option value="${cat}">${cat}</option>`;
+            });
+            select.innerHTML = html;
+            select.value = selectedCategoryFilter;
+        }
+
+        function onFlashcardCategoryChange() {
+            const select = document.getElementById('fc-category-filter');
+            selectedCategoryFilter = select.value;
+            currentFlashcardIndex = 0;
+            updateFlashcardUI();
+        }
+
         function getActiveWordList() {
-            if (isUnknownOnlyMode) {
-                return wordList.filter(w => unknownWordIds.has(w.id));
+            let list = wordList;
+            if (selectedCategoryFilter !== 'ALL') {
+                list = list.filter(w => (w.category || '일반') === selectedCategoryFilter);
             }
-            return wordList;
+            if (isUnknownOnlyMode) {
+                list = list.filter(w => unknownWordIds.has(w.id));
+            }
+            return list;
         }
 
         function updateFlashcardUI() {
@@ -469,11 +506,11 @@
 
             if (!activeList || activeList.length === 0) {
                 document.getElementById('fc-progress-text').innerText = '0 / 0 단어';
-                document.getElementById('fc-category-badge').innerText = '학습 완료';
-                document.getElementById('fc-kana').innerText = '완료!';
-                document.getElementById('fc-pron').innerText = '[모든 단어를 복습했습니다]';
-                document.getElementById('fc-meaning').innerText = '참 잘했어요!';
-                document.getElementById('fc-example').innerText = '선생님과 함께 다음 단계로 이동해 보세요.';
+                document.getElementById('fc-category-badge').innerText = '단어 없음';
+                document.getElementById('fc-kana').innerText = '선택된 단어 없음';
+                document.getElementById('fc-pron').innerText = '[해당 카테고리에 단어가 없습니다]';
+                document.getElementById('fc-meaning').innerText = '다른 카테고리를 선택해보세요';
+                document.getElementById('fc-example').innerText = '상단 카테고리 선택 상자를 확인해보세요.';
                 return;
             }
 
@@ -533,7 +570,6 @@
             }
         }
 
-        // Toast Helper
         function showToast(msg, icon = 'fa-circle-check') {
             const toast = document.getElementById('toast-message');
             const toastText = document.getElementById('toast-text');
@@ -548,7 +584,6 @@
             }, 2500);
         }
 
-        // Native Speech Synthesis Utterance
         function speakJapanese(text) {
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
@@ -559,7 +594,6 @@
             }
         }
 
-        // Web Audio API Sound Effects
         function playSfx(type) {
             try {
                 const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -588,7 +622,6 @@
             } catch(e) {}
         }
 
-        // Navigation Tab Switching
         function switchTab(stageName) {
             document.querySelectorAll('.stage-content').forEach(el => el.classList.add('hidden'));
             document.querySelectorAll('.stage-btn').forEach(btn => {
@@ -680,7 +713,6 @@
             if (matchingSelectedCards.length === 2) {
                 const [first, second] = matchingSelectedCards;
                 if (first.data.id === second.data.id && first.data.type !== second.data.type) {
-                    // Correct Match
                     playSfx('correct');
                     first.el.classList.add('matched', 'opacity-40', 'bg-emerald-100', 'border-emerald-400');
                     second.el.classList.add('matched', 'opacity-40', 'bg-emerald-100', 'border-emerald-400');
@@ -692,7 +724,6 @@
                         showToast('축하합니다! 모든 짝을 찾았습니다!', 'fa-trophy');
                     }
                 } else {
-                    // Incorrect Match
                     playSfx('wrong');
                     first.el.classList.add('animate-shake', 'bg-rose-100', 'border-rose-400');
                     second.el.classList.add('animate-shake', 'bg-rose-100', 'border-rose-400');
@@ -709,7 +740,6 @@
             if (!kor) return '';
             let text = kor.trim();
 
-            // Decomposition map for Hangul Final Consonants (Sok-eum 촉음 받침)
             let result = '';
             let i = 0;
             while (i < text.length) {
@@ -721,18 +751,13 @@
                     let medial = Math.floor((code % 588) / 28);
                     let final = code % 28;
 
-                    // Reconstruct base syllable without final consonant
                     let baseChar = String.fromCharCode(0xAC00 + (initial * 588) + (medial * 28));
 
-                    // Convert base syllable to Hiragana
                     let kana = KOREAN_TO_HIRAGANA_LOOKUP(baseChar);
 
-                    // Handle Sok-eum (촉음 っ) based on final consonant (ㄱ, ㅂ, ㅅ, ㄷ)
                     if (final === 1 || final === 17 || final === 19 || final === 7) { // ㄱ, ㅂ, ㅅ, ㄷ
                         result += kana + 'っ';
-                    } else if (final === 4 || final === 16) { // ㄴ, ㅁ (발음 ん)
-                        result += kana + 'ん';
-                    } else if (final === 21) { // ㅇ 받침
+                    } else if (final === 4 || final === 16 || final === 21) { // ㄴ, ㅁ, ㅇ 받침 -> 발음 ん
                         result += kana + 'ん';
                     } else {
                         result += kana;
@@ -751,8 +776,8 @@
             const map = {
                 '후':'ふ','와':'わ','미':'み','캉':'かん','각':'がっ','코':'こう','우':'う',
                 '네':'ね','이':'い','누':'ぬ','사':'さ','쿠':'く','라':'ら','신':'しん','분':'ぶん',
-                '킵':'きっ','푸':'ぷ','아':'あ','리':'り','가':'が','토':'と','오':'お','하':'は',
-                '요':'よ','가':'が','나':'な','마':'ま','키':'き'
+                '심':'しん','킵':'きっ','푸':'ぷ','아':'あ','리':'り','가':'が','토':'と','오':'お','하':'は',
+                '요':'よ','나':'な','마':'ま','키':'き'
             };
             return map[syllable] || syllable;
         }
@@ -774,7 +799,6 @@
 
         function showQuizQuestion() {
             if (quizCurrentIndex >= quizRoundWords.length) {
-                // Quiz Complete
                 document.getElementById('quiz-round-text').innerText = `퀴즈 완료!`;
                 showToast(`퀴즈 라운드 종료! ${quizScore} / ${quizRoundWords.length} 정답!`, 'fa-trophy');
 
@@ -840,7 +864,6 @@
                 tracingCanvas.height = parent.clientHeight;
             }
 
-            // Universal Pointer Events (Chromebooks, Touchscreens & Mouse)
             tracingCanvas.onpointerdown = startTracing;
             tracingCanvas.onpointermove = drawTracing;
             tracingCanvas.onpointerup = stopTracing;
@@ -861,7 +884,7 @@
             const pos = getCanvasPos(e);
             tracingCtx.beginPath();
             tracingCtx.moveTo(pos.x, pos.y);
-            tracingCtx.strokeStyle = '#ec4899'; // Pink stroke
+            tracingCtx.strokeStyle = '#ec4899';
             tracingCtx.lineWidth = 14;
             tracingCtx.lineCap = 'round';
             tracingCtx.lineJoin = 'round';
@@ -985,6 +1008,7 @@
 
         function openTeacherSpaceModal() {
             document.getElementById('teacher-space-modal').classList.remove('hidden');
+            cancelEditTeacherWord();
             populateTeacherCategoryDropdown();
             renderTeacherWordTable();
         }
@@ -1028,7 +1052,6 @@
             }
 
             if (confirm(`'${selectedCat}' 카테고리를 삭제하시겠습니까?\n이 카테고리의 단어들은 '일반' 카테고리로 이동됩니다.`)) {
-                // Change words in deleted category to '일반'
                 wordList.forEach(w => {
                     if (w.category === selectedCat) {
                         w.category = '일반';
@@ -1037,6 +1060,7 @@
 
                 localStorage.setItem('teacher_jp_words', JSON.stringify(wordList));
                 populateTeacherCategoryDropdown();
+                populateFlashcardCategoryDropdown();
                 renderTeacherWordTable();
                 showToast(`'${selectedCat}' 카테고리가 삭제되었습니다.`, 'fa-trash');
             }
@@ -1046,7 +1070,6 @@
         function onTeacherKanaInput() {
             autoFillKoreanPronunciation();
             
-            // Debounce auto translation to avoid excessive API requests
             clearTimeout(autoTranslateTimer);
             autoTranslateTimer = setTimeout(() => {
                 autoTranslateJapaneseMeaning();
@@ -1056,11 +1079,34 @@
         function autoFillKoreanPronunciation() {
             const kana = document.getElementById('add-word-kana').value.trim();
             const pronInput = document.getElementById('add-word-pron');
+            
+            // Refined Japanese Pronunciation Rule:
+            // Convert 'ん' to 'ㅁ' (m) if followed by b, p, m sound (ば,ぱ,ま lines or ぶ, ぷ, む etc.)
             let result = '';
-            for (let char of kana) {
-                result += HIRAGANA_TO_KOREAN_MAP[char] || char;
+            for (let i = 0; i < kana.length; i++) {
+                const char = kana[i];
+                if (char === 'ん') {
+                    const nextChar = kana[i + 1];
+                    if (nextChar && /[ばびぶべぼぱぴぷぺぽまみむめも]/.test(nextChar)) {
+                        result += 'ㅁ';
+                    } else {
+                        result += 'ん';
+                    }
+                } else {
+                    result += HIRAGANA_TO_KOREAN_MAP[char] || char;
+                }
             }
-            pronInput.value = result;
+
+            // Post-process string to join trailing 'ㅁ' or 'ん' into final consonants if possible
+            pronInput.value = cleanKoreanPronunciation(result);
+        }
+
+        function cleanKoreanPronunciation(str) {
+            return str.replace(/しんぶん/g, '심분')
+                      .replace(/しん/g, '신')
+                      .replace(/ぶん/g, '분')
+                      .replace(/かん/g, '캉')
+                      .replace(/ん/g, 'ㄴ');
         }
 
         async function autoTranslateJapaneseMeaning() {
@@ -1070,7 +1116,6 @@
             if (!kana) return;
 
             try {
-                // Free Public Translation API (Google Translate endpoint)
                 const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=ko&dt=t&q=${encodeURIComponent(kana)}`;
                 const response = await fetch(url);
                 const data = await response.json();
@@ -1089,7 +1134,7 @@
             const kana = document.getElementById('add-word-kana').value.trim();
             const meaning = document.getElementById('add-word-meaning').value.trim();
             const exInput = document.getElementById('add-word-ex');
-            if (kana && meaning) {
+            if (kana && meaning && !exInput.value) {
                 exInput.value = `${kana} ( ${meaning} )`;
             }
         }
@@ -1110,34 +1155,96 @@
                 return;
             }
 
-            const newWord = {
-                id: Date.now(),
-                kana,
-                pron: pron || kana,
-                meaning,
-                category,
-                example: example || `${kana} (${meaning})`
-            };
+            if (editingWordId) {
+                // Edit existing word
+                const wordIndex = wordList.findIndex(w => w.id === editingWordId);
+                if (wordIndex !== -1) {
+                    wordList[wordIndex] = {
+                        id: editingWordId,
+                        kana,
+                        pron: pron || kana,
+                        meaning,
+                        category,
+                        example: example || `${kana} (${meaning})`
+                    };
+                    showToast('단어가 성공적으로 수정되었습니다!', 'fa-circle-check');
+                }
+            } else {
+                // Create new word
+                const newWord = {
+                    id: Date.now(),
+                    kana,
+                    pron: pron || kana,
+                    meaning,
+                    category,
+                    example: example || `${kana} (${meaning})`
+                };
+                wordList.push(newWord);
+                showToast('새 단어가 성공적으로 등록되었습니다!', 'fa-circle-check');
+            }
 
-            wordList.push(newWord);
             localStorage.setItem('teacher_jp_words', JSON.stringify(wordList));
             
-            showToast('새 단어가 성공적으로 등록되었습니다!', 'fa-circle-check');
+            cancelEditTeacherWord();
             renderTeacherWordTable();
             populateTeacherCategoryDropdown();
+            populateFlashcardCategoryDropdown();
+            updateFlashcardUI();
+        }
 
-            // Clear inputs
+        function editWordByTeacher(id) {
+            const word = wordList.find(w => w.id === id);
+            if (!word) return;
+
+            editingWordId = id;
+
+            document.getElementById('teacher-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-500 me-1"></i>단어 수정하기`;
+            document.getElementById('add-word-kana').value = word.kana;
+            document.getElementById('add-word-pron').value = word.pron;
+            document.getElementById('add-word-meaning').value = word.meaning;
+            document.getElementById('add-word-ex').value = word.example || '';
+
+            const select = document.getElementById('add-word-cat-select');
+            const customInput = document.getElementById('add-word-cat-custom');
+
+            populateTeacherCategoryDropdown();
+            if (Array.from(select.options).some(opt => opt.value === word.category)) {
+                select.value = word.category;
+                customInput.classList.add('hidden');
+            } else {
+                select.value = '__NEW__';
+                customInput.value = word.category;
+                customInput.classList.remove('hidden');
+            }
+
+            document.getElementById('add-word-submit-btn').innerText = '단어 수정 저장';
+            document.getElementById('add-word-cancel-btn').classList.remove('hidden');
+            document.getElementById('add-word-kana').focus();
+        }
+
+        function cancelEditTeacherWord() {
+            editingWordId = null;
+            document.getElementById('teacher-form-title').innerHTML = `<i class="fa-solid fa-plus-circle text-pink-500 me-1"></i>새 단어 추가하기`;
             document.getElementById('add-word-kana').value = '';
             document.getElementById('add-word-pron').value = '';
             document.getElementById('add-word-meaning').value = '';
             document.getElementById('add-word-ex').value = '';
+            document.getElementById('add-word-cat-custom').value = '';
+            document.getElementById('add-word-cat-custom').classList.add('hidden');
+            document.getElementById('add-word-submit-btn').innerText = '단어장에 추가하기';
+            document.getElementById('add-word-cancel-btn').classList.add('hidden');
         }
 
         function deleteWordByTeacher(id) {
-            wordList = wordList.filter(w => w.id !== id);
-            localStorage.setItem('teacher_jp_words', JSON.stringify(wordList));
-            renderTeacherWordTable();
-            showToast('단어가 삭제되었습니다.', 'fa-trash');
+            if (confirm('이 단어를 삭제하시겠습니까?')) {
+                wordList = wordList.filter(w => w.id !== id);
+                localStorage.setItem('teacher_jp_words', JSON.stringify(wordList));
+                if (editingWordId === id) cancelEditTeacherWord();
+                renderTeacherWordTable();
+                populateFlashcardCategoryDropdown();
+                updateFlashcardUI();
+                showToast('단어가 삭제되었습니다.', 'fa-trash');
+            }
         }
 
         function renderTeacherWordTable() {
@@ -1151,10 +1258,13 @@
                         <td class="p-3 font-bold text-slate-800">${w.kana}</td>
                         <td class="p-3 text-pink-600 font-jua">[${w.pron}]</td>
                         <td class="p-3">${w.meaning}</td>
-                        <td class="p-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">${w.category}</span></td>
-                        <td class="p-3 text-center">
+                        <td class="p-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">${w.category || '일반'}</span></td>
+                        <td class="p-3 text-center space-x-2">
+                            <button onclick="editWordByTeacher(${w.id})" class="text-amber-600 hover:text-amber-800 text-sm font-bold">
+                                <i class="fa-solid fa-pen-to-square me-0.5"></i>수정
+                            </button>
                             <button onclick="deleteWordByTeacher(${w.id})" class="text-rose-500 hover:text-rose-700 text-sm font-bold">
-                                <i class="fa-solid fa-trash me-1"></i>삭제
+                                <i class="fa-solid fa-trash me-0.5"></i>삭제
                             </button>
                         </td>
                     </tr>
