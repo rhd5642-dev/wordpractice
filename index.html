@@ -387,6 +387,9 @@
     </div>
 
     <script>
+        // ★ 여기에 구글 앱스 스크립트 웹 앱 URL을 넣으세요 ★
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyV9HuboNhKaahDbHhTASOacvEH9c4eTcwsvMVycpY_Zx4KfRHK35OmOFdQX8IVGy81Jw/exec";
+
         let tabLeaveCount = 0;
         let learnedWordIds = new Set();
         let unknownWordIds = new Set();
@@ -401,10 +404,9 @@
 
         let currentFlashcardIndex = 0;
         let currentTracingIndex = 0;
-        let selectedCategoryFilter = 'ALL'; // Active flashcard category filter
-        let editingWordId = null; // Currently editing word ID
+        let selectedCategoryFilter = 'ALL';
+        let editingWordId = null;
 
-        // Default Japanese Words
         const DEFAULT_WORDS = [
             { id: 1, kana: 'ふわふわ', pron: '후와후와', meaning: '폭신폭신', category: '의태어', example: 'くもが ふわふわ しています。 (구름이 폭신폭신해요.)' },
             { id: 2, kana: 'みかん', pron: '미캉', meaning: '귤', category: '음식', example: 'あまい みかんを たべます。 (달콤한 귤을 먹어요.)' },
@@ -418,13 +420,7 @@
             { id: 10, kana: 'おはよう', pron: '오하요우', meaning: '좋은 아침', category: '인사', example: 'せんせい、おはようございます！ (선생님, 좋은 아침입니다!)' }
         ];
 
-        let wordList = [];
-        try {
-            const rawWords = localStorage.getItem('teacher_jp_words');
-            wordList = rawWords ? JSON.parse(rawWords) : [...DEFAULT_WORDS];
-        } catch(e) {
-            wordList = [...DEFAULT_WORDS];
-        }
+        let wordList = [...DEFAULT_WORDS];
 
         const HIRAGANA_TO_KOREAN_MAP = {
             'あ':'아','い':'이','う':'우','え':'에','お':'오',
@@ -451,20 +447,75 @@
             'りゃ':'랴','りゅ':'류','りょ':'료'
         };
 
-        window.addEventListener('load', function() {
+        window.addEventListener('load', async function() {
             document.addEventListener('visibilitychange', function() {
                 if (document.hidden) {
                     tabLeaveCount++;
                 }
             });
 
-            // Populate category dropdown for flashcards stage
+            showToast('단어 데이터를 불러오는 중...', 'fa-spinner');
+            await loadWordsFromGAS();
+
             populateFlashcardCategoryDropdown();
-            // Initialize Flashcard View
             updateFlashcardUI();
-            // Initialize Tracing Canvas
             initTracingCanvas();
         });
+
+        // 구글 앱스 스크립트에서 단어 목록 조회
+        async function loadWordsFromGAS() {
+            if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("YOUR_GOOGLE_APPS_SCRIPT")) {
+                console.warn("GAS URL이 설정되지 않아 기본 단어로 구동합니다.");
+                return;
+            }
+
+            try {
+                const res = await fetch(GAS_WEB_APP_URL);
+                const data = await res.json();
+                if (Array.isArray(data) && data.length > 0) {
+                    wordList = data.map(item => ({
+                        id: Number(item.id) || Date.now(),
+                        kana: String(item.kana || ''),
+                        pron: String(item.pron || ''),
+                        meaning: String(item.meaning || ''),
+                        category: String(item.category || '일반'),
+                        example: String(item.example || '')
+                    }));
+                    showToast('단어 데이터를 성공적으로 가져왔습니다!', 'fa-cloud-arrow-down');
+                }
+            } catch (err) {
+                console.error("단어 데이터 로드 실패:", err);
+                showToast('서버 데이터 로드 실패. 기본 단어를 표시합니다.', 'fa-triangle-exclamation');
+            }
+        }
+
+        // 구글 앱스 스크립트에 전체 단어 목록 저장
+        async function saveWordsToGAS() {
+            if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("YOUR_GOOGLE_APPS_SCRIPT")) {
+                showToast('구글 앱스 스크립트 주소가 설정되지 않았습니다.', 'fa-triangle-exclamation');
+                return;
+            }
+
+            showToast('구글 시트에 저장하는 중...', 'fa-spinner');
+
+            try {
+                await fetch(GAS_WEB_APP_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'saveAll',
+                        words: wordList
+                    })
+                });
+                showToast('구글 시트에 성공적으로 저장되었습니다!', 'fa-cloud-arrow-up');
+            } catch (err) {
+                console.error("단어 저장 실패:", err);
+                showToast('구글 시트 저장 실패', 'fa-circle-xmark');
+            }
+        }
 
         function populateFlashcardCategoryDropdown() {
             const select = document.getElementById('fc-category-filter');
@@ -755,9 +806,9 @@
 
                     let kana = KOREAN_TO_HIRAGANA_LOOKUP(baseChar);
 
-                    if (final === 1 || final === 17 || final === 19 || final === 7) { // ㄱ, ㅂ, ㅅ, ㄷ
+                    if (final === 1 || final === 17 || final === 19 || final === 7) {
                         result += kana + 'っ';
-                    } else if (final === 4 || final === 16 || final === 21) { // ㄴ, ㅁ, ㅇ 받침 -> 발음 ん
+                    } else if (final === 4 || final === 16 || final === 21) {
                         result += kana + 'ん';
                     } else {
                         result += kana;
@@ -1058,7 +1109,7 @@
                     }
                 });
 
-                localStorage.setItem('teacher_jp_words', JSON.stringify(wordList));
+                saveWordsToGAS();
                 populateTeacherCategoryDropdown();
                 populateFlashcardCategoryDropdown();
                 renderTeacherWordTable();
@@ -1080,8 +1131,6 @@
             const kana = document.getElementById('add-word-kana').value.trim();
             const pronInput = document.getElementById('add-word-pron');
             
-            // Refined Japanese Pronunciation Rule:
-            // Convert 'ん' to 'ㅁ' (m) if followed by b, p, m sound (ば,ぱ,ま lines or ぶ, ぷ, む etc.)
             let result = '';
             for (let i = 0; i < kana.length; i++) {
                 const char = kana[i];
@@ -1097,7 +1146,6 @@
                 }
             }
 
-            // Post-process string to join trailing 'ㅁ' or 'ん' into final consonants if possible
             pronInput.value = cleanKoreanPronunciation(result);
         }
 
@@ -1139,7 +1187,7 @@
             }
         }
 
-        function addNewWordFromTeacher() {
+        async function addNewWordFromTeacher() {
             const kana = document.getElementById('add-word-kana').value.trim();
             const pron = document.getElementById('add-word-pron').value.trim();
             const meaning = document.getElementById('add-word-meaning').value.trim();
@@ -1156,7 +1204,6 @@
             }
 
             if (editingWordId) {
-                // Edit existing word
                 const wordIndex = wordList.findIndex(w => w.id === editingWordId);
                 if (wordIndex !== -1) {
                     wordList[wordIndex] = {
@@ -1170,7 +1217,6 @@
                     showToast('단어가 성공적으로 수정되었습니다!', 'fa-circle-check');
                 }
             } else {
-                // Create new word
                 const newWord = {
                     id: Date.now(),
                     kana,
@@ -1183,7 +1229,8 @@
                 showToast('새 단어가 성공적으로 등록되었습니다!', 'fa-circle-check');
             }
 
-            localStorage.setItem('teacher_jp_words', JSON.stringify(wordList));
+            // 구글 앱스 스크립트에 전체 단어 목록 저장
+            await saveWordsToGAS();
             
             cancelEditTeacherWord();
             renderTeacherWordTable();
@@ -1235,10 +1282,10 @@
             document.getElementById('add-word-cancel-btn').classList.add('hidden');
         }
 
-        function deleteWordByTeacher(id) {
+        async function deleteWordByTeacher(id) {
             if (confirm('이 단어를 삭제하시겠습니까?')) {
                 wordList = wordList.filter(w => w.id !== id);
-                localStorage.setItem('teacher_jp_words', JSON.stringify(wordList));
+                await saveWordsToGAS();
                 if (editingWordId === id) cancelEditTeacherWord();
                 renderTeacherWordTable();
                 populateFlashcardCategoryDropdown();
