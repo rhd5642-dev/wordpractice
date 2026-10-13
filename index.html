@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>일본어 회화 단어 연습</title>
+    <title>일본어 회화 단어/문장 연습</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons CDN -->
@@ -52,10 +52,10 @@
 
     <!-- Navigation Header -->
     <header class="bg-amber-400 border-b-4 border-amber-500 sticky top-0 z-30 shadow-md">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
             <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('flashcards')">
                 <i class="fa-solid me-1 fa-book-open text-2xl text-pink-600"></i>
-                <h1 class="font-jua text-2xl text-slate-900 tracking-wide">일본어 회화 단어 연습</h1>
+                <h1 class="font-jua text-2xl text-slate-900 tracking-wide">일본어 회화 단어/문장 연습</h1>
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
@@ -74,7 +74,7 @@
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto w-full px-4 py-6 flex-grow flex flex-col">
+    <main class="max-w-5xl mx-auto w-full px-4 py-6 flex-grow flex flex-col">
 
         <!-- Tab Navigation Buttons for 4 Learning Stages -->
         <nav class="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-6">
@@ -111,33 +111,33 @@
                 </div>
             </div>
 
-            <!-- 3D Flashcard Container -->
-            <div class="w-full max-w-md h-80 perspective-1000 my-auto cursor-pointer" onclick="flipFlashcard()">
-                <div id="flashcard-inner" class="relative w-full h-full duration-500 transform-style-3d shadow-xl rounded-3xl border-4 border-amber-300 bg-white">
-                    <div class="absolute inset-0 w-full h-full backface-hidden rounded-3xl p-6 flex flex-col items-center justify-between bg-gradient-to-b from-amber-50 to-orange-50">
+            <!-- 3D Flashcard Container (확장된 너비 및 반응형 한줄 폰트 적용) -->
+            <div class="w-full max-w-xl min-h-[340px] perspective-1000 my-auto cursor-pointer" onclick="flipFlashcard()">
+                <div id="flashcard-inner" class="relative w-full h-full min-h-[340px] duration-500 transform-style-3d shadow-xl rounded-3xl border-4 border-amber-300 bg-white">
+                    <div class="absolute inset-0 w-full h-full backface-hidden rounded-3xl p-6 flex flex-col items-center justify-between bg-gradient-to-b from-amber-50 to-orange-50 overflow-hidden">
                         <div class="w-full flex justify-between items-center">
                             <span id="fc-category-badge" class="bg-amber-200 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">카테고리</span>
                             <button onclick="event.stopPropagation(); playCurrentTTS();" class="text-pink-500 hover:text-pink-600 text-2xl p-2 rounded-full hover:bg-pink-100 transition">
                                 <i class="fa-solid fa-volume-high"></i>
                             </button>
                         </div>
-                        <div class="text-center my-auto">
-                            <h2 id="fc-kana" class="text-5xl font-black text-slate-800 tracking-wider mb-2"></h2>
-                            <p id="fc-pron" class="text-2xl font-jua text-pink-500"></p>
+                        <div class="text-center my-auto w-full px-2">
+                            <h2 id="fc-kana" class="text-2xl sm:text-3xl md:text-4xl font-black text-slate-800 tracking-wider mb-3 whitespace-nowrap overflow-x-auto no-scrollbar"></h2>
+                            <p id="fc-pron" class="text-xl sm:text-2xl font-jua text-pink-500 whitespace-nowrap overflow-x-auto no-scrollbar"></p>
                         </div>
                         <p class="text-slate-400 text-xs font-bold">카드를 터치하면 뜻이 나타나요!</p>
                     </div>
 
-                    <div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-3xl p-6 flex flex-col items-center justify-between bg-gradient-to-b from-pink-50 to-rose-50 border-4 border-pink-300">
+                    <div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-3xl p-6 flex flex-col items-center justify-between bg-gradient-to-b from-pink-50 to-rose-50 border-4 border-pink-300 overflow-hidden">
                         <div class="w-full flex justify-end">
                             <button onclick="event.stopPropagation(); playCurrentTTS();" class="text-pink-500 hover:text-pink-600 text-2xl p-2 rounded-full hover:bg-pink-100 transition">
                                 <i class="fa-solid fa-volume-high"></i>
                             </button>
                         </div>
-                        <div class="text-center my-auto px-2">
-                            <h3 id="fc-meaning" class="text-3xl font-jua text-slate-800 mb-4"></h3>
-                            <div class="bg-white/80 p-3 rounded-2xl border border-pink-200">
-                                <p id="fc-example" class="text-sm font-medium text-slate-700 leading-relaxed"></p>
+                        <div class="text-center my-auto w-full px-2">
+                            <h3 id="fc-meaning" class="text-2xl sm:text-3xl font-jua text-slate-800 mb-4 whitespace-nowrap overflow-x-auto no-scrollbar"></h3>
+                            <div class="bg-white/80 p-3 rounded-2xl border border-pink-200 w-full overflow-hidden">
+                                <p id="fc-example" class="text-sm sm:text-base font-medium text-slate-700 leading-relaxed whitespace-nowrap overflow-x-auto no-scrollbar"></p>
                             </div>
                         </div>
                         <p class="text-slate-400 text-xs font-bold">카드를 터치하면 앞면으로 돌아가요!</p>
@@ -145,7 +145,7 @@
                 </div>
             </div>
 
-            <div class="w-full max-w-md mt-6 flex justify-between items-center gap-2">
+            <div class="w-full max-w-xl mt-6 flex justify-between items-center gap-2">
                 <button onclick="prevFlashcard()" class="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-jua rounded-2xl text-lg shadow transition active:scale-95">
                     <i class="fa-solid fa-arrow-left me-1"></i> 이전
                 </button>
@@ -170,7 +170,8 @@
                 </button>
             </div>
 
-            <div id="matching-grid" class="w-full grid grid-cols-3 sm:grid-cols-4 gap-3 my-auto">
+            <!-- 긴 문장에 최적화된 Grid Layout -->
+            <div id="matching-grid" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 my-auto">
                 <!-- Cards dynamically populated -->
             </div>
         </section>
@@ -187,20 +188,20 @@
                 </div>
             </div>
 
-            <div class="w-full max-w-lg bg-white rounded-3xl shadow-xl border-4 border-amber-300 p-6 flex flex-col items-center text-center my-auto">
+            <div class="w-full max-w-xl bg-white rounded-3xl shadow-xl border-4 border-amber-300 p-6 flex flex-col items-center text-center my-auto">
                 <span class="bg-amber-100 text-amber-800 text-xs px-3 py-1 rounded-full font-bold mb-4">한글 발음 입력 퀴즈</span>
-                <h2 id="quiz-question-meaning" class="text-3xl font-jua text-slate-800 mb-6">"단어 뜻"</h2>
+                <h2 id="quiz-question-meaning" class="text-2xl sm:text-3xl font-jua text-slate-800 mb-6 whitespace-nowrap overflow-x-auto w-full no-scrollbar px-2">"단어 뜻"</h2>
 
-                <div class="w-full max-w-sm mb-2">
-                    <input type="text" id="quiz-user-input" oninput="onQuizInputLiveConvert(this)" placeholder="한글로 입력 (예: 후와후와)" class="w-full text-center text-2xl font-bold py-3 px-4 rounded-2xl border-2 border-amber-400 outline-none focus:ring-4 focus:ring-amber-200 transition">
+                <div class="w-full max-w-md mb-2">
+                    <input type="text" id="quiz-user-input" oninput="onQuizInputLiveConvert(this)" placeholder="한글로 입력 (예: 후와후와)" class="w-full text-center text-xl sm:text-2xl font-bold py-3 px-4 rounded-2xl border-2 border-amber-400 outline-none focus:ring-4 focus:ring-amber-200 transition">
                     <!-- Real-time Hiragana Conversion Display -->
-                    <div class="text-lg font-bold text-pink-500 mt-2 h-8 flex items-center justify-center gap-2">
-                        <span>변환 히라가나:</span>
-                        <span id="quiz-converted-preview" class="text-2xl text-slate-800 underline decoration-pink-400"></span>
+                    <div class="text-base sm:text-lg font-bold text-pink-500 mt-2 h-8 flex items-center justify-center gap-2 overflow-x-auto no-scrollbar">
+                        <span class="shrink-0">변환 히라가나:</span>
+                        <span id="quiz-converted-preview" class="text-xl sm:text-2xl text-slate-800 underline decoration-pink-400 whitespace-nowrap"></span>
                     </div>
                 </div>
 
-                <div class="w-full max-w-sm bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600 text-left mb-6">
+                <div class="w-full max-w-md bg-slate-50 p-3 rounded-xl border border-slate-200 text-xs text-slate-600 text-left mb-6">
                     <p class="font-bold mb-1 text-amber-700"><i class="fa-solid fa-lightbulb text-amber-500 me-1"></i>입력 팁!</p>
                     <ul class="list-disc list-inside space-y-0.5">
                         <li><b>각코 / 킵푸</b>처럼 받침(ㄱ, ㅂ, ㅅ)을 넣으면 촉음(っ)으로 변환됩니다.</li>
@@ -208,18 +209,18 @@
                     </ul>
                 </div>
 
-                <button onclick="submitQuizAnswer()" class="w-full max-w-sm py-3 bg-pink-500 hover:bg-pink-600 text-white font-jua text-xl rounded-2xl shadow transition active:scale-95">
+                <button onclick="submitQuizAnswer()" class="w-full max-w-md py-3 bg-pink-500 hover:bg-pink-600 text-white font-jua text-xl rounded-2xl shadow transition active:scale-95">
                     정답 확인하기
                 </button>
             </div>
 
-            <div id="quiz-wrong-container" class="w-full max-w-lg mt-6 bg-rose-50 border border-rose-200 rounded-2xl p-4 hidden">
+            <div id="quiz-wrong-container" class="w-full max-w-xl mt-6 bg-rose-50 border border-rose-200 rounded-2xl p-4 hidden">
                 <h4 class="font-jua text-rose-700 text-base mb-2"><i class="fa-solid fa-circle-exclamation me-1"></i>틀린 단어 목록</h4>
                 <ul id="quiz-wrong-list" class="space-y-1 text-sm text-slate-700"></ul>
             </div>
         </section>
 
-        <!-- STAGE 4: TRACING (Wide Rectangle Box) -->
+        <!-- STAGE 4: TRACING (Wide Box) -->
         <section id="stage-tracing" class="stage-content hidden flex-grow flex flex-col items-center justify-start">
             <div class="w-full flex justify-between items-center mb-4 flex-wrap gap-2">
                 <span id="tracing-word-info" class="font-jua text-slate-700 text-lg">단어 선택: 1 / 10</span>
@@ -236,8 +237,8 @@
                 </div>
             </div>
 
-            <!-- Wide Horizontal Rectangle Canvas Container -->
-            <div class="relative w-full max-w-2xl h-64 border-4 border-dashed border-amber-400 bg-white rounded-3xl shadow-lg flex items-center justify-center overflow-hidden my-auto">
+            <!-- Wide Horizontal Canvas Container 확장 -->
+            <div class="relative w-full max-w-3xl h-64 border-4 border-dashed border-amber-400 bg-white rounded-3xl shadow-lg flex items-center justify-center overflow-hidden my-auto">
                 <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
                     <div class="w-full border-t border-dashed border-slate-200"></div>
                 </div>
@@ -245,16 +246,16 @@
                     <div class="h-full border-l border-dashed border-slate-200"></div>
                 </div>
 
-                <!-- Background Hiragana Text Guide -->
-                <div id="tracing-guide-text" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-slate-200 font-black tracking-widest text-center px-4">
-                    <span id="tracing-kana-guide" class="text-6xl sm:text-7xl"></span>
-                    <span id="tracing-pron-guide" class="text-2xl font-jua text-slate-300 mt-2"></span>
+                <!-- Background Hiragana Text Guide (문장 길이 대응 폰트) -->
+                <div id="tracing-guide-text" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-slate-200 font-black tracking-wider text-center px-4 w-full">
+                    <span id="tracing-kana-guide" class="text-3xl sm:text-4xl md:text-5xl whitespace-nowrap overflow-hidden"></span>
+                    <span id="tracing-pron-guide" class="text-lg sm:text-xl font-jua text-slate-300 mt-2 whitespace-nowrap overflow-hidden"></span>
                 </div>
 
                 <canvas id="tracing-canvas" class="absolute inset-0 w-full h-full cursor-crosshair z-10"></canvas>
             </div>
 
-            <div class="w-full max-w-2xl mt-4 flex justify-between items-center gap-3">
+            <div class="w-full max-w-3xl mt-4 flex justify-between items-center gap-3">
                 <button onclick="clearTracingCanvas()" class="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-jua rounded-2xl text-base transition">
                     <i class="fa-solid fa-eraser me-1"></i> 지우기
                 </button>
@@ -307,16 +308,16 @@
                     <h4 id="teacher-form-title" class="font-jua text-lg text-slate-800 mb-3"><i class="fa-solid fa-plus-circle text-pink-500 me-1"></i>새 단어 추가하기</h4>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-4">
                         <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">일본어 단어 (히라가나/한자)</label>
-                            <input type="text" id="add-word-kana" oninput="onTeacherKanaInput()" placeholder="예: ふわふわ" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
+                            <label class="block text-xs font-bold text-slate-600 mb-1">일본어 단어/문장 (히라가나/한자)</label>
+                            <input type="text" id="add-word-kana" oninput="onTeacherKanaInput()" placeholder="예: ふわふわ しています" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">한글 발음 (자동 채움)</label>
-                            <input type="text" id="add-word-pron" placeholder="예: 후와후와" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400 bg-slate-100">
+                            <input type="text" id="add-word-pron" placeholder="예: 후와후와 시테이마스" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400 bg-slate-100">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">한글 뜻 (자동 번역/채움)</label>
-                            <input type="text" id="add-word-meaning" oninput="autoGenerateExampleSentence()" placeholder="예: 폭신폭신" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
+                            <input type="text" id="add-word-meaning" oninput="autoGenerateExampleSentence()" placeholder="예: 폭신폭신해요" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-600 mb-1">카테고리 주제 및 관리</label>
@@ -422,7 +423,7 @@
             { id: 9, kana: 'ありがとう', pron: '아리가토우', meaning: '고맙습니다', category: '인사', example: 'いつも ありがとう。 (항상 고맙습니다.)' },
             { id: 10, kana: 'おはよう', pron: '오하요우', meaning: '좋은 아침', category: '인사', example: 'せんせい、おはようございます！ (선생님, 좋은 아침입니다!)' },
             { id: 11, kana: 'りんご', pron: '링고', meaning: '사과', category: '음식', example: 'あかい りんごです。 (빨간 사과입니다.)' },
-            { id: 12, kana: 'みず', pron: '미즈', meaning: '물', category: '음식', example: 'つ메たい みずを のみます。 (차거운 물을 마십니다.)' },
+            { id: 12, kana: 'みず', pron: '미즈', meaning: '물', category: '음식', example: 'つめたい みずを のみます。 (차거운 물을 마십니다.)' },
             { id: 13, kana: 'ともだち', pron: '토모다치', meaning: '친구', category: '인물', example: 'ともだちと あそびます。 (친구와 놉니다.)' },
             { id: 14, kana: 'せんせい', pron: '센세이', meaning: '선생님', category: '인물', example: 'せんせいに しつもんします。 (선생님께 질문합니다.)' },
             { id: 15, kana: 'ほん', pron: '혼', meaning: '책', category: '물건', example: 'おもしろい ほんを よみます。 (재미있는 책을 봅니다.)' }
@@ -653,12 +654,12 @@
 
             cards.forEach((card, index) => {
                 const cardEl = document.createElement('div');
-                cardEl.className = "matching-card bg-white border-2 border-amber-300 rounded-2xl p-4 flex flex-col items-center justify-center text-center cursor-pointer shadow hover:border-amber-500 transition min-h-[90px] select-none";
+                cardEl.className = "matching-card bg-white border-2 border-amber-300 rounded-2xl p-3 flex flex-col items-center justify-center text-center cursor-pointer shadow hover:border-amber-500 transition min-h-[90px] select-none w-full overflow-hidden";
                 cardEl.dataset.id = card.id;
                 cardEl.dataset.index = index;
                 cardEl.innerHTML = `
-                    <span class="font-bold text-slate-800 text-xl">${card.text}</span>
-                    ${card.sub ? `<span class="text-xs font-jua text-pink-500 mt-1">${card.sub}</span>` : ''}
+                    <span class="font-bold text-slate-800 text-base sm:text-lg whitespace-nowrap overflow-x-auto w-full no-scrollbar px-1">${card.text}</span>
+                    ${card.sub ? `<span class="text-xs font-jua text-pink-500 mt-1 whitespace-nowrap overflow-x-auto w-full no-scrollbar px-1">${card.sub}</span>` : ''}
                 `;
                 cardEl.onclick = () => selectMatchingCard(cardEl, card);
                 grid.appendChild(cardEl);
