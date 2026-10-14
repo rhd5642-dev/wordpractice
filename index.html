@@ -34,14 +34,17 @@
         .rotate-y-180 {
             transform: rotateY(180deg);
         }
-        /* Shake animation for wrong matching */
+        
+        /* 오답 피드백 흔들림 및 빨간색 표시 스타일 */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             20%, 60% { transform: translateX(-8px); }
             40%, 80% { transform: translateX(8px); }
         }
-        .animate-shake {
-            animation: shake 0.4s ease-in-out;
+        .wrong-shake {
+            animation: shake 0.4s ease-in-out !important;
+            background-color: #ffe4e6 !important; /* rose-100 */
+            border-color: #f43f5e !important;     /* rose-500 */
         }
         canvas {
             touch-action: none;
@@ -90,7 +93,7 @@
             </button>
         </div>
 
-        <!-- Tab Navigation Buttons for 3 Learning Stages (3단계 퀴즈 제거됨) -->
+        <!-- Tab Navigation Buttons for 3 Learning Stages -->
         <nav class="grid grid-cols-3 gap-2 mb-6">
             <button id="tab-btn-flashcards" onclick="switchTab('flashcards')" class="stage-btn py-3 px-2 rounded-2xl font-jua text-base sm:text-lg border-b-4 shadow transition bg-amber-500 border-amber-600 text-white flex flex-col items-center justify-center">
                 <span>1단계: 플래시카드</span>
@@ -443,7 +446,6 @@
             currentFlashcardIndex = 0;
             currentTracingIndex = 0;
 
-            // Update UI across all active stages
             updateFlashcardUI();
             if (currentStage === 'matching') {
                 initMatchingGame();
@@ -575,7 +577,7 @@
             onGlobalCategoryChange(selectedCategoryFilter);
         }
 
-        /* --- 2단계: MATCHING GAME --- */
+        /* --- 2단계: MATCHING GAME LOGIC (수정 완료) --- */
         let matchingSelectedCards = [];
 
         function initMatchingGame() {
@@ -636,12 +638,14 @@
                         showToast('축하합니다! 모든 짝을 찾았습니다!', 'fa-trophy');
                     }
                 } else {
+                    // 틀렸을 때 경고 애니메이션 및 빨간색 테두리 반영
                     playSfx('wrong');
-                    first.el.classList.add('animate-shake', 'bg-rose-100', 'border-rose-400');
-                    second.el.classList.add('animate-shake', 'bg-rose-100', 'border-rose-400');
+                    first.el.classList.add('wrong-shake');
+                    second.el.classList.add('wrong-shake');
+                    
                     setTimeout(() => {
-                        first.el.classList.remove('animate-shake', 'bg-rose-100', 'border-rose-400', 'border-pink-500', 'bg-pink-50');
-                        second.el.classList.remove('animate-shake', 'bg-rose-100', 'border-rose-400', 'border-pink-500', 'bg-pink-50');
+                        first.el.classList.remove('wrong-shake', 'border-pink-500', 'bg-pink-50');
+                        second.el.classList.remove('wrong-shake', 'border-pink-500', 'bg-pink-50');
                         matchingSelectedCards = [];
                     }, 600);
                 }
@@ -998,34 +1002,3 @@
             tbody.innerHTML = '';
 
             wordList.forEach(w => {
-                tbody.innerHTML += `
-                    <tr>
-                        <td class="p-3 font-bold text-slate-800">${w.kana}</td>
-                        <td class="p-3 text-pink-600 font-jua">[${w.pron}]</td>
-                        <td class="p-3">${w.meaning}</td>
-                        <td class="p-3"><span class="bg-amber-100 text-amber-800 text-xs px-2 py-0.5 rounded-full font-bold">${w.category || '일반'}</span></td>
-                        <td class="p-3 text-center space-x-2">
-                            <button onclick="editWordByTeacher(${w.id})" class="text-amber-600 hover:text-amber-800 text-sm font-bold">수정</button>
-                            <button onclick="deleteWordByTeacher(${w.id})" class="text-rose-500 hover:text-rose-700 text-sm font-bold">삭제</button>
-                        </td>
-                    </tr>
-                `;
-            });
-        }
-
-        function inspectStudentReportText() {
-            const text = document.getElementById('teacher-inspect-text').value.trim();
-            const resultDiv = document.getElementById('teacher-inspect-result');
-            if (!text) return;
-
-            resultDiv.innerHTML = `
-                <div class="bg-white p-4 rounded-xl border border-amber-300 text-xs space-y-2">
-                    <p class="font-bold text-slate-800 border-b pb-1"><i class="fa-solid fa-check-circle text-emerald-500 me-1"></i>리포트 검수 결과</p>
-                    <pre class="whitespace-pre-wrap font-sans text-slate-700">${text}</pre>
-                </div>
-            `;
-            resultDiv.classList.remove('hidden');
-        }
-    </script>
-</body>
-</html>
