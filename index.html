@@ -138,4 +138,31 @@
 
         <!-- Stage Nav -->
         <nav class="grid grid-cols-3 gap-2 mb-6">
-            <button id="tab-btn-flashcards" onclick="switchWordTab('flashcards')"
+            <button id="tab-btn-flashcards" onclick="switchWordTab('flashcards')" class="word-stage-btn py-3 px-2 rounded-2xl font-jua text-base sm:text-lg border-b-4 shadow transition bg-amber-500 border-amber-600 text-white flex items-center justify-center">
+                <span>1단계: 플래시카드</span>
+            </button>
+            <button id="tab-btn-matching" onclick="switchWordTab('matching')" class="word-stage-btn py-3 px-2 rounded-2xl font-jua text-base sm:text-lg border-b-4 shadow transition bg-white border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center justify-center">
+                <span>2단계: 짝맞추기</span>
+            </button>
+            <button id="tab-btn-tracing" onclick="switchWordTab('tracing')" class="word-stage-btn py-3 px-2 rounded-2xl font-jua text-base sm:text-lg border-b-4 shadow transition bg-white border-slate-200 text-slate-700 hover:bg-slate-50 flex items-center justify-center">
+                <span>3단계: 따라쓰기</span>
+            </button>
+        </nav>
+
+        <!-- Stage 1: Flashcard -->
+        <section id="stage-flashcards" class="word-stage-content flex-grow flex flex-col items-center justify-start">
+            <div class="w-full flex justify-between items-center mb-4">
+                <span id="fc-progress-text" class="font-jua text-slate-600 text-lg">1 / 10 단어</span>
+            </div>
+
+            <div class="w-full max-w-xl min-h-[340px] perspective-1000 my-auto cursor-pointer" onclick="flipFlashcard()">
+                <div id="flashcard-inner" class="relative w-full h-full min-h-[340px] duration-500 transform-style-3d shadow-xl rounded-3xl border-4 border-amber-300 bg-white">
+                    <div class="absolute inset-0 w-full h-full backface-hidden rounded-3xl p-6 flex flex-col items-center justify-between bg-gradient-to-b from-amber-50 to-orange-50 overflow-hidden">
+                        <div class="w-full flex justify-between items-center">
+                            <span id="fc-category-badge" class="bg-amber-200 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">카테고리</span>
+                            <button onclick="event.stopPropagation(); playCurrentTTS();" class="text-pink-500 hover:text-pink-600 text-2xl p-2 rounded-full hover:bg-pink-100 transition">
+                                <i class="fa-solid fa-volume-high"></i>
+                            </button>
+                        </div>
+                        <div class="text-center my-auto w-full px-2">
+                            <h2 id="fc-kana" class="text-2xl sm:text-3xl md
