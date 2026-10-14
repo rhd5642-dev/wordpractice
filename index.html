@@ -3,24 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>일본어 회화 단어/문장 연습</title>
+    <title>일본어 회화 & 단어 마스터 스튜디오</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts (Jua, Noto Sans KR) -->
-    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+KR:wght@400;500;700;900&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&family=Noto+Sans+JP:wght@400;500;700;900&family=Noto+Sans+KR:wght@400;500;700;800;900&display=swap" rel="stylesheet">
 
     <style>
         body {
-            font-family: 'Noto Sans KR', sans-serif;
+            font-family: 'Noto Sans KR', 'Noto Sans JP', sans-serif;
             background-color: #fdf8f6;
             touch-action: manipulation;
         }
         .font-jua {
             font-family: 'Jua', sans-serif;
         }
-        /* 3D Flashcard flip styles */
+        /* 3D Card flip styles */
         .perspective-1000 {
             perspective: 1000px;
         }
@@ -34,8 +36,15 @@
         .rotate-y-180 {
             transform: rotateY(180deg);
         }
+        .card-inner {
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+        .card-flipped {
+            transform: rotateY(180deg);
+        }
         
-        /* 오답 피드백 흔들림 및 빨간색 표시 스타일 */
+        /* Shake animation for wrong matching */
         @keyframes shake {
             0%, 100% { transform: translateX(0); }
             20%, 60% { transform: translateX(-8px); }
@@ -43,32 +52,49 @@
         }
         .wrong-shake {
             animation: shake 0.4s ease-in-out !important;
-            background-color: #ffe4e6 !important; /* rose-100 */
-            border-color: #f43f5e !important;     /* rose-500 */
+            background-color: #ffe4e6 !important;
+            border-color: #f43f5e !important;
+        }
+        .pulse-ring {
+            box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+            animation: pulse-ring-anim 1.5s infinite;
+        }
+        @keyframes pulse-ring-anim {
+            0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
         }
         canvas {
             touch-action: none;
         }
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
     </style>
 </head>
-<body class="min-h-screen text-slate-800 flex flex-col">
+<body class="min-h-screen text-slate-800 flex flex-col select-none pb-12">
 
-    <!-- Navigation Header -->
+    <!-- Header -->
     <header class="bg-amber-400 border-b-4 border-amber-500 sticky top-0 z-30 shadow-md">
         <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-2">
-            <div class="flex items-center gap-2 cursor-pointer" onclick="switchTab('flashcards')">
-                <i class="fa-solid me-1 fa-book-open text-2xl text-pink-600"></i>
-                <h1 class="font-jua text-2xl text-slate-900 tracking-wide">일본어 회화 단어/문장 연습</h1>
+            <div class="flex items-center gap-2 cursor-pointer" onclick="switchAppTab('app-words')">
+                <i class="fa-solid fa-comments text-2xl text-pink-600"></i>
+                <h1 class="font-jua text-2xl text-slate-900 tracking-wide">일본어 통합 학습 스튜디오</h1>
             </div>
 
             <div class="flex items-center gap-2 flex-wrap">
-                <!-- Share Button -->
                 <button onclick="openShareModal()" class="bg-pink-500 hover:bg-pink-600 text-white px-3 py-1.5 rounded-xl font-jua text-sm shadow transition active:scale-95 flex items-center gap-1">
                     <i class="fa-solid fa-share-nodes"></i>
-                    <span>결과 공유 (밴드에 붙여넣으세요.)</span>
+                    <span>결과 공유</span>
                 </button>
-
-                <!-- Teacher Mode Button -->
                 <button onclick="openTeacherAuthModal()" class="bg-slate-800 hover:bg-slate-900 text-amber-300 px-3 py-1.5 rounded-xl font-jua text-sm shadow transition active:scale-95 flex items-center gap-1">
                     <i class="fa-solid fa-lock"></i>
                     <span>선생님 공간</span>
@@ -77,7 +103,24 @@
         </div>
     </header>
 
-    <main class="max-w-5xl mx-auto w-full px-4 py-6 flex-grow flex flex-col">
+    <!-- Main Navigation: App 1 vs App 2 -->
+    <div class="bg-amber-100 border-b border-amber-200">
+        <div class="max-w-5xl mx-auto px-4 py-2 flex gap-2">
+            <button id="main-nav-words" onclick="switchAppTab('app-words')" class="flex-1 py-3 px-4 rounded-2xl font-jua text-lg shadow transition bg-pink-500 text-white flex items-center justify-center gap-2">
+                <i class="fa-solid fa-book-open"></i>
+                <span>1. 단어/기본문장 연습</span>
+            </button>
+            <button id="main-nav-conversation" onclick="switchAppTab('app-conversation')" class="flex-1 py-3 px-4 rounded-2xl font-jua text-lg shadow transition bg-white text-slate-700 hover:bg-slate-50 flex items-center justify-center gap-2">
+                <i class="fa-solid fa-headset"></i>
+                <span>2. 실전회화 & AI 말하기</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- ================================================================= -->
+    <!-- APP SECTION 1: WORD / SHORT SENTENCE APP                          -->
+    <!-- ================================================================= -->
+    <main id="app-words" class="app-section max-w-5xl mx-auto w-full px-4 py-6 flex-grow flex flex-col">
 
         <!-- Global Category Selector Header -->
         <div class="w-full bg-white border-2 border-amber-300 rounded-2xl p-3 mb-6 shadow-sm flex flex-wrap justify-between items-center gap-3">
@@ -93,912 +136,6 @@
             </button>
         </div>
 
-        <!-- Tab Navigation Buttons for 3 Learning Stages -->
+        <!-- Stage Nav -->
         <nav class="grid grid-cols-3 gap-2 mb-6">
-            <button id="tab-btn-flashcards" onclick="switchTab('flashcards')" class="stage-btn py-3 px-2 rounded-2xl font-jua text-base sm:text-lg border-b-4 shadow transition bg-amber-500 border-amber-600 text-white flex flex-col items-center justify-center">
-                <span>1단계: 플래시카드</span>
-            </button>
-            <button id="tab-btn-matching" onclick="switchTab('matching')" class="stage-btn py-3 px-2 rounded-2xl font-jua text-base sm:text-lg border-b-4 shadow transition bg-white border-slate-200 text-slate-700 hover:bg-slate-50 flex flex-col items-center justify-center">
-                <span>2단계: 짝맞추기</span>
-            </button>
-            <button id="tab-btn-tracing" onclick="switchTab('tracing')" class="stage-btn py-3 px-2 rounded-2xl font-jua text-base sm:text-lg border-b-4 shadow transition bg-white border-slate-200 text-slate-700 hover:bg-slate-50 flex flex-col items-center justify-center">
-                <span>3단계: 따라쓰기</span>
-            </button>
-        </nav>
-
-        <!-- STAGE 1: FLASHCARDS -->
-        <section id="stage-flashcards" class="stage-content flex-grow flex flex-col items-center justify-start">
-            <div class="w-full flex justify-between items-center mb-4">
-                <span id="fc-progress-text" class="font-jua text-slate-600 text-lg">1 / 10 단어</span>
-            </div>
-
-            <!-- 3D Flashcard Container -->
-            <div class="w-full max-w-xl min-h-[340px] perspective-1000 my-auto cursor-pointer" onclick="flipFlashcard()">
-                <div id="flashcard-inner" class="relative w-full h-full min-h-[340px] duration-500 transform-style-3d shadow-xl rounded-3xl border-4 border-amber-300 bg-white">
-                    <div class="absolute inset-0 w-full h-full backface-hidden rounded-3xl p-6 flex flex-col items-center justify-between bg-gradient-to-b from-amber-50 to-orange-50 overflow-hidden">
-                        <div class="w-full flex justify-between items-center">
-                            <span id="fc-category-badge" class="bg-amber-200 text-amber-800 text-xs px-2.5 py-1 rounded-full font-bold">카테고리</span>
-                            <button onclick="event.stopPropagation(); playCurrentTTS();" class="text-pink-500 hover:text-pink-600 text-2xl p-2 rounded-full hover:bg-pink-100 transition">
-                                <i class="fa-solid fa-volume-high"></i>
-                            </button>
-                        </div>
-                        <div class="text-center my-auto w-full px-2">
-                            <h2 id="fc-kana" class="text-2xl sm:text-3xl md:text-4xl font-black text-slate-800 tracking-wider mb-3 whitespace-nowrap overflow-x-auto no-scrollbar"></h2>
-                            <p id="fc-pron" class="text-xl sm:text-2xl font-jua text-pink-500 whitespace-nowrap overflow-x-auto no-scrollbar"></p>
-                        </div>
-                        <p class="text-slate-400 text-xs font-bold">카드를 터치하면 뜻이 나타나요!</p>
-                    </div>
-
-                    <div class="absolute inset-0 w-full h-full backface-hidden rotate-y-180 rounded-3xl p-6 flex flex-col items-center justify-between bg-gradient-to-b from-pink-50 to-rose-50 border-4 border-pink-300 overflow-hidden">
-                        <div class="w-full flex justify-end">
-                            <button onclick="event.stopPropagation(); playCurrentTTS();" class="text-pink-500 hover:text-pink-600 text-2xl p-2 rounded-full hover:bg-pink-100 transition">
-                                <i class="fa-solid fa-volume-high"></i>
-                            </button>
-                        </div>
-                        <div class="text-center my-auto w-full px-2">
-                            <h3 id="fc-meaning" class="text-2xl sm:text-3xl font-jua text-slate-800 mb-4 whitespace-nowrap overflow-x-auto no-scrollbar"></h3>
-                            <div class="bg-white/80 p-3 rounded-2xl border border-pink-200 w-full overflow-hidden">
-                                <p id="fc-example" class="text-sm sm:text-base font-medium text-slate-700 leading-relaxed whitespace-nowrap overflow-x-auto no-scrollbar"></p>
-                            </div>
-                        </div>
-                        <p class="text-slate-400 text-xs font-bold">카드를 터치하면 앞면으로 돌아가요!</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="w-full max-w-xl mt-6 flex justify-between items-center gap-2">
-                <button onclick="prevFlashcard()" class="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-jua rounded-2xl text-lg shadow transition active:scale-95">
-                    <i class="fa-solid fa-arrow-left me-1"></i> 이전
-                </button>
-                <button onclick="markFlashcardUnknown()" class="flex-1 py-3 bg-rose-100 hover:bg-rose-200 text-rose-600 font-jua rounded-2xl text-lg shadow transition active:scale-95 border border-rose-300">
-                    잘 모르겠어요
-                </button>
-                <button onclick="markFlashcardLearned()" class="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-jua rounded-2xl text-lg shadow transition active:scale-95">
-                    다 외웠어요!
-                </button>
-                <button onclick="nextFlashcard()" class="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-jua rounded-2xl text-lg shadow transition active:scale-95">
-                    다음 <i class="fa-solid fa-arrow-right ms-1"></i>
-                </button>
-            </div>
-        </section>
-
-        <!-- STAGE 2: MATCHING GAME -->
-        <section id="stage-matching" class="stage-content hidden flex-grow flex flex-col items-center">
-            <div class="w-full flex justify-between items-center mb-4">
-                <span id="matching-score-text" class="font-jua text-lg text-slate-700">맞춘 짝: 0 / 0</span>
-                <button onclick="initMatchingGame()" class="px-3 py-1.5 rounded-xl bg-amber-400 hover:bg-amber-500 text-slate-800 font-jua text-sm transition">
-                    <i class="fa-solid fa-rotate-right me-1"></i> 게임 다시 시작
-                </button>
-            </div>
-
-            <div id="matching-grid" class="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 my-auto">
-                <!-- Cards dynamically populated -->
-            </div>
-        </section>
-
-        <!-- STAGE 3: TRACING (Wide Box) -->
-        <section id="stage-tracing" class="stage-content hidden flex-grow flex flex-col items-center justify-start">
-            <div class="w-full flex justify-between items-center mb-4 flex-wrap gap-2">
-                <span id="tracing-word-info" class="font-jua text-slate-700 text-lg">단어 선택: 1 / 10</span>
-                <div class="flex items-center gap-2">
-                    <button onclick="prevTracingWord()" class="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 font-jua text-sm">
-                        <i class="fa-solid fa-arrow-left me-1"></i> 이전 단어
-                    </button>
-                    <button onclick="nextTracingWord()" class="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 font-jua text-sm">
-                        다음 단어 <i class="fa-solid fa-arrow-right ms-1"></i>
-                    </button>
-                    <button onclick="playTracingTTS()" class="px-3 py-1.5 rounded-xl bg-pink-500 text-white font-jua text-sm hover:bg-pink-600 shadow">
-                        <i class="fa-solid fa-volume-high"></i> 발음 듣기
-                    </button>
-                </div>
-            </div>
-
-            <!-- Wide Canvas Container -->
-            <div class="relative w-full max-w-3xl h-64 border-4 border-dashed border-amber-400 bg-white rounded-3xl shadow-lg flex items-center justify-center overflow-hidden my-auto">
-                <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div class="w-full border-t border-dashed border-slate-200"></div>
-                </div>
-                <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
-                    <div class="h-full border-l border-dashed border-slate-200"></div>
-                </div>
-
-                <!-- Background Guide Text -->
-                <div id="tracing-guide-text" class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none select-none text-slate-200 font-black tracking-wider text-center px-4 w-full">
-                    <span id="tracing-kana-guide" class="text-3xl sm:text-4xl md:text-5xl whitespace-nowrap overflow-hidden"></span>
-                    <span id="tracing-pron-guide" class="text-lg sm:text-xl font-jua text-slate-300 mt-2 whitespace-nowrap overflow-hidden"></span>
-                </div>
-
-                <canvas id="tracing-canvas" class="absolute inset-0 w-full h-full cursor-crosshair z-10"></canvas>
-            </div>
-
-            <div class="w-full max-w-3xl mt-4 flex justify-between items-center gap-3">
-                <button onclick="clearTracingCanvas()" class="flex-1 py-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-jua rounded-2xl text-base transition">
-                    <i class="fa-solid fa-eraser me-1"></i> 지우기
-                </button>
-                <button onclick="verifyTracingAccuracy()" class="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 text-white font-jua rounded-2xl text-base transition shadow">
-                    <i class="fa-solid fa-check me-1"></i> 완성 확인
-                </button>
-            </div>
-            <p id="tracing-feedback" class="mt-2 font-jua text-base h-6 text-center text-slate-600"></p>
-        </section>
-
-    </main>
-
-    <!-- Teacher Auth Modal -->
-    <div id="teacher-auth-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border-4 border-amber-400">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-jua text-xl text-slate-800"><i class="fa-solid fa-user-shield text-amber-500 me-2"></i>선생님 인증</h3>
-                <button onclick="closeTeacherAuthModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            <p class="text-slate-600 text-sm mb-4">선생님 전용 비밀번호를 입력해주세요.</p>
-            <input type="password" id="teacher-pin-input" placeholder="비밀번호 입력" class="w-full px-4 py-3 rounded-2xl border-2 border-amber-300 font-bold text-center text-xl outline-none focus:ring-4 focus:ring-amber-200 mb-4">
-            <button onclick="verifyTeacherPin()" class="w-full py-3 bg-slate-800 hover:bg-slate-900 text-amber-300 font-jua text-lg rounded-2xl shadow transition">
-                확인
-            </button>
-        </div>
-    </div>
-
-    <!-- Teacher Space Modal -->
-    <div id="teacher-space-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-3xl w-full max-w-3xl max-h-[90vh] flex flex-col shadow-2xl border-4 border-amber-400 overflow-hidden">
-            <div class="bg-amber-400 px-6 py-4 flex justify-between items-center">
-                <h3 class="font-jua text-2xl text-slate-900"><i class="fa-solid fa-chalkboard-user me-2"></i>선생님 단어 및 학습 관리자</h3>
-                <button onclick="closeTeacherSpaceModal()" class="text-slate-800 hover:text-slate-600 text-2xl"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-
-            <div class="p-6 overflow-y-auto flex-grow space-y-8">
-                <!-- Report Inspector -->
-                <div class="bg-amber-50 p-5 rounded-2xl border border-amber-200">
-                    <h4 class="font-jua text-lg text-amber-900 mb-2"><i class="fa-solid fa-clipboard-check me-1"></i>학생 학습 결과 검수</h4>
-                    <p class="text-xs text-slate-600 mb-3">학생이 공유한 결과 리포트 텍스트를 붙여넣으세요.</p>
-                    <textarea id="teacher-inspect-text" rows="3" placeholder="학생이 공유한 결과 텍스트를 여기에 붙여넣으세요..." class="w-full p-3 rounded-xl border border-amber-300 bg-white text-sm outline-none focus:ring-2 focus:ring-amber-400 mb-2"></textarea>
-                    <button onclick="inspectStudentReportText()" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white font-jua rounded-xl text-sm shadow">
-                        리포트 검수하기
-                    </button>
-                    <div id="teacher-inspect-result" class="mt-3 hidden"></div>
-                </div>
-
-                <!-- Word Form -->
-                <div>
-                    <h4 id="teacher-form-title" class="font-jua text-lg text-slate-800 mb-3"><i class="fa-solid fa-plus-circle text-pink-500 me-1"></i>새 단어 추가하기</h4>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 mb-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">일본어 단어/문장 (히라가나/한자)</label>
-                            <input type="text" id="add-word-kana" oninput="onTeacherKanaInput()" placeholder="예: ふわふわ しています" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">한글 발음 (자동 채움)</label>
-                            <input type="text" id="add-word-pron" placeholder="예: 후와후와 시테이마스" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400 bg-slate-100">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">한글 뜻 (자동 번역/채움)</label>
-                            <input type="text" id="add-word-meaning" oninput="autoGenerateExampleSentence()" placeholder="예: 폭신폭신해요" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">카테고리 주제 및 관리</label>
-                            <div class="flex gap-2">
-                                <select id="add-word-cat-select" onchange="toggleCustomCategoryInput()" class="flex-1 px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400 bg-white text-sm">
-                                </select>
-                                <button type="button" onclick="deleteSelectedCategory()" title="선택한 카테고리 삭제" class="px-3 py-2 bg-rose-100 hover:bg-rose-200 text-rose-600 rounded-xl font-jua text-xs border border-rose-300 transition shrink-0">
-                                    <i class="fa-solid fa-trash me-1"></i>삭제
-                                </button>
-                            </div>
-                            <input type="text" id="add-word-cat-custom" placeholder="새 카테고리 이름 입력" class="w-full px-3 py-2 rounded-xl border border-amber-300 outline-none focus:ring-2 focus:ring-amber-400 mt-2 hidden">
-                        </div>
-                        <div class="sm:col-span-2">
-                            <label class="block text-xs font-bold text-slate-600 mb-1">일본어 예문 + 한글 해석</label>
-                            <input type="text" id="add-word-ex" placeholder="예: くもが ふわふわ しています。 (구름이 폭신폭신해요.)" class="w-full px-3 py-2 rounded-xl border border-slate-300 outline-none focus:ring-2 focus:ring-amber-400">
-                        </div>
-                        <div class="sm:col-span-2 flex gap-2">
-                            <button id="add-word-submit-btn" onclick="addNewWordFromTeacher()" class="flex-1 py-2.5 rounded-xl bg-pink-500 hover:bg-pink-600 text-white font-jua text-base shadow transition">
-                                단어장에 추가하기
-                            </button>
-                            <button id="add-word-cancel-btn" onclick="cancelEditTeacherWord()" class="py-2.5 px-4 rounded-xl bg-slate-300 hover:bg-slate-400 text-slate-700 font-jua text-base transition hidden">
-                                수정 취소
-                            </button>
-                        </div>
-                    </div>
-
-                    <h4 class="font-jua text-lg text-slate-800 mb-2">등록된 단어 목록 (<span id="teacher-word-count">0</span>개)</h4>
-                    <div class="overflow-x-auto border border-slate-200 rounded-2xl">
-                        <table class="w-full text-left text-sm text-slate-600">
-                            <thead class="bg-slate-100 font-jua text-slate-800 border-b border-slate-200">
-                                <tr>
-                                    <th class="p-3">히라가나</th>
-                                    <th class="p-3">발음</th>
-                                    <th class="p-3">뜻</th>
-                                    <th class="p-3">카테고리</th>
-                                    <th class="p-3 text-center">관리</th>
-                                </tr>
-                            </thead>
-                            <tbody id="teacher-word-table-body" class="divide-y divide-slate-200">
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Result Share Modal -->
-    <div id="share-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border-4 border-pink-400">
-            <div class="flex justify-between items-center mb-4">
-                <h3 class="font-jua text-xl text-slate-800"><i class="fa-solid fa-share-nodes text-pink-500 me-2"></i>학습 결과 공유 리포트</h3>
-                <button onclick="closeShareModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            <p class="text-slate-600 text-xs mb-3">아래 리포트 글이 복사됩니다. 네이버 밴드나 선생님 채팅방에 붙여넣으세요!</p>
-            <textarea id="share-report-textarea" readonly rows="8" class="w-full p-3 rounded-2xl border-2 border-pink-200 bg-pink-50/50 text-xs font-mono text-slate-700 outline-none mb-4 leading-relaxed"></textarea>
-            <button onclick="copyShareReportText()" class="w-full py-3 bg-pink-500 hover:bg-pink-600 text-white font-jua text-lg rounded-2xl shadow transition active:scale-95">
-                <i class="fa-solid fa-copy me-1"></i> 리포트 글 복사하기
-            </button>
-        </div>
-    </div>
-
-    <!-- Toast Notification Box -->
-    <div id="toast-message" class="fixed top-20 left-1/2 -translate-x-1/2 bg-slate-900/90 text-white font-jua px-5 py-3 rounded-2xl shadow-xl z-50 transition-all opacity-0 pointer-events-none flex items-center gap-2 text-sm">
-        <i id="toast-icon" class="fa-solid fa-circle-check text-amber-400 text-lg"></i>
-        <span id="toast-text">알림 메시지</span>
-    </div>
-
-    <script>
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyV9HuboNhKaahDbHhTASOacvEH9c4eTcwsvMVycpY_Zx4KfRHK35OmOFdQX8IVGy81Jw/exec";
-
-        let tabLeaveCount = 0;
-        let learnedWordIds = new Set();
-        let unknownWordIds = new Set();
-        let isUnknownOnlyMode = false;
-        let matchedPairsCount = 0;
-        let tracedWordIds = new Set();
-
-        let currentFlashcardIndex = 0;
-        let currentTracingIndex = 0;
-        let selectedCategoryFilter = 'ALL';
-        let currentStage = 'flashcards';
-        let editingWordId = null;
-
-        const DEFAULT_WORDS = [
-            { id: 1, kana: 'ふわふわ', pron: '후와후와', meaning: '폭신폭신', category: '의태어', example: 'くもが ふわふわ しています。 (구름이 폭신폭신해요.)' },
-            { id: 2, kana: 'みかん', pron: '미캉', meaning: '귤', category: '음식', example: 'あまい みかんを たべます。 (달콤한 귤을 먹어요.)' },
-            { id: 3, kana: 'がっこう', pron: '각코우', meaning: '학교', category: '장소', example: 'まいあさ がっこうに いきます。 (매일 아침 학교에 갑니다.)' },
-            { id: 4, kana: 'ねこ', pron: '네코', meaning: '고양이', category: '동물', example: 'かわいい ねこが ねています。 (귀여운 고양이가 자고 있어요.)' },
-            { id: 5, kana: 'いぬ', pron: '이누', meaning: '개/강아지', category: '동물', example: 'いぬが はしっています。 (강아지가 달려요.)' },
-            { id: 6, kana: 'さくら', pron: '사쿠라', meaning: '벚꽃', category: '자연', example: 'さくらが さきました。 (벚꽃이 피었습니다.)' },
-            { id: 7, kana: 'しんぶん', pron: '심분', meaning: '신문', category: '물건', example: 'しんぶんを よみます。 (신문을 봅니다.)' },
-            { id: 8, kana: 'きっぷ', pron: '킵푸', meaning: '표/티켓', category: '물건', example: 'でんしゃの きっぷを かいます。 (전철 표를 삽니다.)' },
-            { id: 9, kana: 'ありがとう', pron: '아리가토우', meaning: '고맙습니다', category: '인사', example: 'いつも ありがとう。 (항상 고맙습니다.)' },
-            { id: 10, kana: 'おはよう', pron: '오하요우', meaning: '좋은 아침', category: '인사', example: 'せんせい、おはようございます！ (선생님, 좋은 아침입니다!)' },
-            { id: 11, kana: 'りんご', pron: '링고', meaning: '사과', category: '음식', example: 'あかい りんごです。 (빨간 사과입니다.)' },
-            { id: 12, kana: 'みず', pron: '미즈', meaning: '물', category: '음식', example: 'つめたい みずを のみます。 (차거운 물을 마십니다.)' },
-            { id: 13, kana: 'ともだち', pron: '토모다치', meaning: '친구', category: '인물', example: 'ともだちと あそびます。 (친구와 놉니다.)' },
-            { id: 14, kana: 'せんせい', pron: '센세이', meaning: '선생님', category: '인물', example: 'せんせいに しつもんします。 (선생님께 질문합니다.)' },
-            { id: 15, kana: 'ほん', pron: '혼', meaning: '책', category: '물건', example: 'おもしろい ほんを よみます。 (재미있는 책을 봅니다.)' }
-        ];
-
-        let wordList = [...DEFAULT_WORDS];
-
-        window.addEventListener('load', async function() {
-            document.addEventListener('visibilitychange', function() {
-                if (document.hidden) tabLeaveCount++;
-            });
-
-            showToast('단어 데이터를 불러오는 중...', 'fa-spinner');
-            await loadWordsFromGAS();
-
-            populateGlobalCategoryDropdown();
-            updateFlashcardUI();
-            initTracingCanvas();
-        });
-
-        async function loadWordsFromGAS() {
-            if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("YOUR_GOOGLE_APPS_SCRIPT")) return;
-
-            try {
-                const res = await fetch(GAS_WEB_APP_URL);
-                const data = await res.json();
-                if (Array.isArray(data) && data.length > 0) {
-                    wordList = data.map(item => ({
-                        id: Number(item.id) || Date.now(),
-                        kana: String(item.kana || ''),
-                        pron: String(item.pron || ''),
-                        meaning: String(item.meaning || ''),
-                        category: String(item.category || '일반'),
-                        example: String(item.example || '')
-                    }));
-                    showToast('단어 데이터를 성공적으로 가져왔습니다!', 'fa-cloud-arrow-down');
-                }
-            } catch (err) {
-                console.error("단어 로드 실패:", err);
-            }
-        }
-
-        async function saveWordsToGAS() {
-            if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("YOUR_GOOGLE_APPS_SCRIPT")) return;
-            showToast('구글 시트에 저장하는 중...', 'fa-spinner');
-            try {
-                await fetch(GAS_WEB_APP_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ action: 'saveAll', words: wordList })
-                });
-                showToast('구글 시트에 저장되었습니다!', 'fa-cloud-arrow-up');
-            } catch (err) {
-                console.error("단어 저장 실패:", err);
-            }
-        }
-
-        function populateGlobalCategoryDropdown() {
-            const select = document.getElementById('global-category-filter');
-            if (!select) return;
-            const categories = Array.from(new Set(wordList.map(w => w.category || '일반')));
-            let html = '<option value="ALL">전체 카테고리</option>';
-            categories.forEach(cat => {
-                html += `<option value="${cat}">${cat}</option>`;
-            });
-            select.innerHTML = html;
-            select.value = selectedCategoryFilter;
-        }
-
-        function onGlobalCategoryChange(category) {
-            selectedCategoryFilter = category;
-            currentFlashcardIndex = 0;
-            currentTracingIndex = 0;
-
-            updateFlashcardUI();
-            if (currentStage === 'matching') {
-                initMatchingGame();
-            } else if (currentStage === 'tracing') {
-                updateTracingUI();
-            }
-        }
-
-        function getActiveWordList() {
-            let list = wordList;
-            if (selectedCategoryFilter !== 'ALL') {
-                list = list.filter(w => (w.category || '일반') === selectedCategoryFilter);
-            }
-            if (isUnknownOnlyMode) {
-                list = list.filter(w => unknownWordIds.has(w.id));
-            }
-            return list;
-        }
-
-        function switchTab(stageName) {
-            currentStage = stageName;
-            document.querySelectorAll('.stage-content').forEach(el => el.classList.add('hidden'));
-            document.querySelectorAll('.stage-btn').forEach(btn => {
-                btn.className = "stage-btn py-3 px-2 rounded-2xl font-jua text-base sm:text-lg border-b-4 shadow transition bg-white border-slate-200 text-slate-700 hover:bg-slate-50 flex flex-col items-center justify-center";
-            });
-
-            const activeContent = document.getElementById(`stage-${stageName}`);
-            const activeBtn = document.getElementById(`tab-btn-${stageName}`);
-
-            if (activeContent) activeContent.classList.remove('hidden');
-            if (activeBtn) activeBtn.className = "stage-btn py-3 px-2 rounded-2xl font-jua text-base sm:text-lg border-b-4 shadow transition bg-amber-500 border-amber-600 text-white flex flex-col items-center justify-center";
-
-            if (stageName === 'matching') {
-                initMatchingGame();
-            }
-            if (stageName === 'tracing') {
-                setTimeout(() => {
-                    initTracingCanvas();
-                    updateTracingUI();
-                }, 50);
-            }
-        }
-
-        /* --- 1단계: FLASHCARD LOGIC --- */
-        function updateFlashcardUI() {
-            const activeList = getActiveWordList();
-            const innerCard = document.getElementById('flashcard-inner');
-            if (innerCard) innerCard.classList.remove('rotate-y-180');
-
-            if (!activeList || activeList.length === 0) {
-                document.getElementById('fc-progress-text').innerText = '0 / 0 단어';
-                document.getElementById('fc-category-badge').innerText = '단어 없음';
-                document.getElementById('fc-kana').innerText = '단어 없음';
-                document.getElementById('fc-pron').innerText = '';
-                document.getElementById('fc-meaning').innerText = '카테고리를 변경해보세요';
-                document.getElementById('fc-example').innerText = '';
-                return;
-            }
-
-            if (currentFlashcardIndex >= activeList.length) currentFlashcardIndex = 0;
-            if (currentFlashcardIndex < 0) currentFlashcardIndex = activeList.length - 1;
-
-            const current = activeList[currentFlashcardIndex];
-            document.getElementById('fc-progress-text').innerText = `${currentFlashcardIndex + 1} / ${activeList.length} 단어`;
-            document.getElementById('fc-category-badge').innerText = current.category || '일반';
-            document.getElementById('fc-kana').innerText = current.kana;
-            document.getElementById('fc-pron').innerText = `[${current.pron}]`;
-            document.getElementById('fc-meaning').innerText = current.meaning;
-            document.getElementById('fc-example').innerText = current.example || `${current.kana} (${current.meaning})`;
-        }
-
-        function flipFlashcard() {
-            document.getElementById('flashcard-inner').classList.toggle('rotate-y-180');
-        }
-
-        function playCurrentTTS() {
-            const list = getActiveWordList();
-            if (list[currentFlashcardIndex]) speakJapanese(list[currentFlashcardIndex].kana);
-        }
-
-        function prevFlashcard() {
-            const list = getActiveWordList();
-            if (list.length === 0) return;
-            currentFlashcardIndex = (currentFlashcardIndex - 1 + list.length) % list.length;
-            updateFlashcardUI();
-        }
-
-        function nextFlashcard() {
-            const list = getActiveWordList();
-            if (list.length === 0) return;
-            currentFlashcardIndex = (currentFlashcardIndex + 1) % list.length;
-            updateFlashcardUI();
-        }
-
-        function markFlashcardLearned() {
-            const list = getActiveWordList();
-            const word = list[currentFlashcardIndex];
-            if (word) {
-                learnedWordIds.add(word.id);
-                unknownWordIds.delete(word.id);
-                showToast(`'${word.kana}' 다 외웠어요!`, 'fa-circle-check');
-                playSfx('correct');
-                nextFlashcard();
-            }
-        }
-
-        function markFlashcardUnknown() {
-            const list = getActiveWordList();
-            const word = list[currentFlashcardIndex];
-            if (word) {
-                unknownWordIds.add(word.id);
-                showToast(`'${word.kana}' 복습 목록에 추가됨!`, 'fa-bookmark');
-                nextFlashcard();
-            }
-        }
-
-        function toggleReviewOnlyMode() {
-            if (unknownWordIds.size === 0 && !isUnknownOnlyMode) {
-                showToast('복습할 단어가 없습니다.', 'fa-circle-info');
-                return;
-            }
-            isUnknownOnlyMode = !isUnknownOnlyMode;
-            const btn = document.getElementById('fc-filter-review-btn');
-            btn.className = isUnknownOnlyMode 
-                ? "px-3 py-1.5 rounded-xl border border-pink-500 bg-pink-500 text-white font-jua text-sm shadow transition"
-                : "px-3 py-1.5 rounded-xl border border-pink-300 bg-pink-50 text-pink-600 font-jua text-sm hover:bg-pink-100 transition";
-            currentFlashcardIndex = 0;
-            currentTracingIndex = 0;
-            onGlobalCategoryChange(selectedCategoryFilter);
-        }
-
-        /* --- 2단계: MATCHING GAME LOGIC (수정 완료) --- */
-        let matchingSelectedCards = [];
-
-        function initMatchingGame() {
-            const grid = document.getElementById('matching-grid');
-            grid.innerHTML = '';
-            matchingSelectedCards = [];
-            matchedPairsCount = 0;
-
-            const activeList = getActiveWordList();
-            if (activeList.length === 0) {
-                document.getElementById('matching-score-text').innerText = `단어가 없습니다.`;
-                grid.innerHTML = `<div class="col-span-full text-center py-10 font-jua text-slate-400">선택한 카테고리에 등록된 단어가 없습니다.</div>`;
-                return;
-            }
-
-            const sampleSize = Math.min(6, activeList.length);
-            const shuffledWords = [...activeList].sort(() => 0.5 - Math.random()).slice(0, sampleSize);
-            document.getElementById('matching-score-text').innerText = `맞춘 짝: 0 / ${shuffledWords.length}`;
-
-            let cards = [];
-            shuffledWords.forEach(w => {
-                cards.push({ id: w.id, type: 'kana', text: w.kana, sub: `[${w.pron}]` });
-                cards.push({ id: w.id, type: 'meaning', text: w.meaning, sub: '' });
-            });
-            cards.sort(() => 0.5 - Math.random());
-
-            cards.forEach((card, index) => {
-                const cardEl = document.createElement('div');
-                cardEl.className = "matching-card bg-white border-2 border-amber-300 rounded-2xl p-3 flex flex-col items-center justify-center text-center cursor-pointer shadow hover:border-amber-500 transition min-h-[90px] select-none w-full overflow-hidden";
-                cardEl.dataset.id = card.id;
-                cardEl.dataset.index = index;
-                cardEl.innerHTML = `
-                    <span class="font-bold text-slate-800 text-base sm:text-lg whitespace-nowrap overflow-x-auto w-full no-scrollbar px-1">${card.text}</span>
-                    ${card.sub ? `<span class="text-xs font-jua text-pink-500 mt-1 whitespace-nowrap overflow-x-auto w-full no-scrollbar px-1">${card.sub}</span>` : ''}
-                `;
-                cardEl.onclick = () => selectMatchingCard(cardEl, card);
-                grid.appendChild(cardEl);
-            });
-        }
-
-        function selectMatchingCard(cardEl, cardObj) {
-            if (cardEl.classList.contains('matched') || matchingSelectedCards.some(c => c.el === cardEl)) return;
-
-            cardEl.classList.add('border-pink-500', 'bg-pink-50');
-            matchingSelectedCards.push({ el: cardEl, data: cardObj });
-
-            if (matchingSelectedCards.length === 2) {
-                const [first, second] = matchingSelectedCards;
-                if (first.data.id === second.data.id && first.data.type !== second.data.type) {
-                    playSfx('correct');
-                    first.el.classList.add('matched', 'opacity-40', 'bg-emerald-100', 'border-emerald-400');
-                    second.el.classList.add('matched', 'opacity-40', 'bg-emerald-100', 'border-emerald-400');
-                    matchedPairsCount++;
-                    const total = document.querySelectorAll('.matching-card').length / 2;
-                    document.getElementById('matching-score-text').innerText = `맞춘 짝: ${matchedPairsCount} / ${total}`;
-                    matchingSelectedCards = [];
-                    if (matchedPairsCount === total) {
-                        showToast('축하합니다! 모든 짝을 찾았습니다!', 'fa-trophy');
-                    }
-                } else {
-                    // 틀렸을 때 경고 애니메이션 및 빨간색 테두리 반영
-                    playSfx('wrong');
-                    first.el.classList.add('wrong-shake');
-                    second.el.classList.add('wrong-shake');
-                    
-                    setTimeout(() => {
-                        first.el.classList.remove('wrong-shake', 'border-pink-500', 'bg-pink-50');
-                        second.el.classList.remove('wrong-shake', 'border-pink-500', 'bg-pink-50');
-                        matchingSelectedCards = [];
-                    }, 600);
-                }
-            }
-        }
-
-        /* --- 3단계: TRACING LOGIC (Wide Canvas) --- */
-        let tracingCanvas, tracingCtx;
-        let isTracing = false;
-
-        function initTracingCanvas() {
-            tracingCanvas = document.getElementById('tracing-canvas');
-            if (!tracingCanvas) return;
-            tracingCtx = tracingCanvas.getContext('2d');
-
-            const parent = tracingCanvas.parentElement;
-            if (parent && parent.clientWidth > 0 && parent.clientHeight > 0) {
-                tracingCanvas.width = parent.clientWidth;
-                tracingCanvas.height = parent.clientHeight;
-            }
-
-            tracingCanvas.onpointerdown = startTracing;
-            tracingCanvas.onpointermove = drawTracing;
-            tracingCanvas.onpointerup = stopTracing;
-            tracingCanvas.onpointerleave = stopTracing;
-            tracingCanvas.onpointercancel = stopTracing;
-        }
-
-        function getCanvasPos(e) {
-            const rect = tracingCanvas.getBoundingClientRect();
-            return {
-                x: (e.clientX - rect.left) * (tracingCanvas.width / rect.width),
-                y: (e.clientY - rect.top) * (tracingCanvas.height / rect.height)
-            };
-        }
-
-        function startTracing(e) {
-            isTracing = true;
-            const pos = getCanvasPos(e);
-            tracingCtx.beginPath();
-            tracingCtx.moveTo(pos.x, pos.y);
-            tracingCtx.strokeStyle = '#ec4899';
-            tracingCtx.lineWidth = 16;
-            tracingCtx.lineCap = 'round';
-            tracingCtx.lineJoin = 'round';
-        }
-
-        function drawTracing(e) {
-            if (!isTracing) return;
-            const pos = getCanvasPos(e);
-            tracingCtx.lineTo(pos.x, pos.y);
-            tracingCtx.stroke();
-        }
-
-        function stopTracing() { isTracing = false; }
-
-        function clearTracingCanvas() {
-            if (tracingCtx) {
-                tracingCtx.clearRect(0, 0, tracingCanvas.width, tracingCanvas.height);
-            }
-            document.getElementById('tracing-feedback').innerText = '';
-        }
-
-        function updateTracingUI() {
-            const activeList = getActiveWordList();
-            if (!activeList || activeList.length === 0) {
-                document.getElementById('tracing-word-info').innerText = '단어 없음';
-                document.getElementById('tracing-kana-guide').innerText = '없음';
-                document.getElementById('tracing-pron-guide').innerText = '';
-                return;
-            }
-
-            if (currentTracingIndex >= activeList.length) currentTracingIndex = 0;
-            if (currentTracingIndex < 0) currentTracingIndex = activeList.length - 1;
-
-            const word = activeList[currentTracingIndex];
-            document.getElementById('tracing-word-info').innerText = `단어 선택: (${currentTracingIndex + 1} / ${activeList.length}) ${word.meaning}`;
-            document.getElementById('tracing-kana-guide').innerText = word.kana;
-            document.getElementById('tracing-pron-guide').innerText = `[${word.pron}]`;
-
-            clearTracingCanvas();
-        }
-
-        function prevTracingWord() {
-            const list = getActiveWordList();
-            if (list.length === 0) return;
-            currentTracingIndex = (currentTracingIndex - 1 + list.length) % list.length;
-            updateTracingUI();
-        }
-
-        function nextTracingWord() {
-            const list = getActiveWordList();
-            if (list.length === 0) return;
-            currentTracingIndex = (currentTracingIndex + 1) % list.length;
-            updateTracingUI();
-        }
-
-        function playTracingTTS() {
-            const list = getActiveWordList();
-            if (list[currentTracingIndex]) speakJapanese(list[currentTracingIndex].kana);
-        }
-
-        function verifyTracingAccuracy() {
-            if (!tracingCanvas) return;
-            const imgData = tracingCtx.getImageData(0, 0, tracingCanvas.width, tracingCanvas.height);
-            let drawnPixels = 0;
-            for (let i = 3; i < imgData.data.length; i += 4) {
-                if (imgData.data[i] > 10) drawnPixels++;
-            }
-
-            const feedbackEl = document.getElementById('tracing-feedback');
-            if (drawnPixels > 1000) {
-                const list = getActiveWordList();
-                const word = list[currentTracingIndex];
-                if (word) tracedWordIds.add(word.id);
-                feedbackEl.className = "mt-2 font-jua text-base text-center text-emerald-600";
-                feedbackEl.innerText = "훌륭해요! 참 잘 썼어요!";
-                playSfx('correct');
-            } else {
-                feedbackEl.className = "mt-2 font-jua text-base text-center text-rose-500";
-                feedbackEl.innerText = "조금 더 꼼꼼하게 따라 써보세요!";
-                playSfx('wrong');
-            }
-        }
-
-        /* --- UTILS & AUDIO --- */
-        function showToast(msg, icon = 'fa-circle-check') {
-            const toast = document.getElementById('toast-message');
-            document.getElementById('toast-text').innerText = msg;
-            document.getElementById('toast-icon').className = `fa-solid ${icon} text-amber-400 text-lg`;
-            toast.classList.remove('opacity-0', 'pointer-events-none');
-            setTimeout(() => toast.classList.add('opacity-0', 'pointer-events-none'), 2500);
-        }
-
-        function speakJapanese(text) {
-            if ('speechSynthesis' in window) {
-                window.speechSynthesis.cancel();
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = 'ja-JP';
-                utterance.rate = 0.85;
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-
-        function playSfx(type) {
-            try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
-                osc.connect(gain);
-                gain.connect(ctx.destination);
-
-                if (type === 'correct') {
-                    osc.type = 'sine';
-                    osc.frequency.setValueAtTime(523.25, ctx.currentTime);
-                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1);
-                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.3);
-                } else if (type === 'wrong') {
-                    osc.type = 'sawtooth';
-                    osc.frequency.setValueAtTime(180, ctx.currentTime);
-                    osc.frequency.setValueAtTime(130, ctx.currentTime + 0.15);
-                    gain.gain.setValueAtTime(0.2, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
-                    osc.start();
-                    osc.stop(ctx.currentTime + 0.3);
-                }
-            } catch(e) {}
-        }
-
-        /* --- SHARE & TEACHER MODALS --- */
-        function openShareModal() {
-            const modal = document.getElementById('share-modal');
-            const textarea = document.getElementById('share-report-textarea');
-
-            textarea.value = 
-`[일본어 회화 단어/문장 연습 학습 결과 보고서]
------------------------------
-- 카테고리: ${selectedCategoryFilter === 'ALL' ? '전체' : selectedCategoryFilter}
-- 1단계 (플래시카드 완료): ${learnedWordIds.size} / ${wordList.length} 단어
-- 2단계 (짝맞추기 완료): ${matchedPairsCount} 짝 성공
-- 3단계 (따라쓰기 완료): ${tracedWordIds.size} 단어 완료
-- 학습 중 화면 이탈 횟수: ${tabLeaveCount} 회
------------------------------
-선생님! 열심히 공부했습니다!`;
-
-            modal.classList.remove('hidden');
-        }
-
-        function closeShareModal() { document.getElementById('share-modal').classList.add('hidden'); }
-
-        function copyShareReportText() {
-            const textarea = document.getElementById('share-report-textarea');
-            textarea.select();
-            document.execCommand('copy');
-            showToast('보고서가 복사되었습니다!', 'fa-copy');
-            closeShareModal();
-        }
-
-        function openTeacherAuthModal() {
-            document.getElementById('teacher-pin-input').value = '';
-            document.getElementById('teacher-auth-modal').classList.remove('hidden');
-        }
-
-        function closeTeacherAuthModal() { document.getElementById('teacher-auth-modal').classList.add('hidden'); }
-
-        function verifyTeacherPin() {
-            if (document.getElementById('teacher-pin-input').value.trim() === '1207') {
-                closeTeacherAuthModal();
-                openTeacherSpaceModal();
-            } else {
-                showToast('비밀번호가 올바르지 않습니다!', 'fa-circle-xmark');
-            }
-        }
-
-        function openTeacherSpaceModal() {
-            document.getElementById('teacher-space-modal').classList.remove('hidden');
-            cancelEditTeacherWord();
-            populateTeacherCategoryDropdown();
-            renderTeacherWordTable();
-        }
-
-        function closeTeacherSpaceModal() { document.getElementById('teacher-space-modal').classList.add('hidden'); }
-
-        function populateTeacherCategoryDropdown() {
-            const select = document.getElementById('add-word-cat-select');
-            const categories = Array.from(new Set(wordList.map(w => w.category || '일반')));
-            select.innerHTML = '';
-            categories.forEach(cat => { select.innerHTML += `<option value="${cat}">${cat}</option>`; });
-            select.innerHTML += `<option value="__NEW__">+ 새 카테고리 추가</option>`;
-        }
-
-        function toggleCustomCategoryInput() {
-            const select = document.getElementById('add-word-cat-select');
-            const customInput = document.getElementById('add-word-cat-custom');
-            if (select.value === '__NEW__') {
-                customInput.classList.remove('hidden');
-                customInput.focus();
-            } else {
-                customInput.classList.add('hidden');
-            }
-        }
-
-        function deleteSelectedCategory() {
-            const select = document.getElementById('add-word-cat-select');
-            const selectedCat = select.value;
-
-            if (selectedCat === '__NEW__' || !selectedCat) return;
-
-            if (confirm(`'${selectedCat}' 카테고리를 삭제하시겠습니까?`)) {
-                wordList.forEach(w => { if (w.category === selectedCat) w.category = '일반'; });
-                saveWordsToGAS();
-                populateTeacherCategoryDropdown();
-                populateGlobalCategoryDropdown();
-                renderTeacherWordTable();
-                showToast(`'${selectedCat}' 카테고리가 삭제되었습니다.`, 'fa-trash');
-            }
-        }
-
-        function onTeacherKanaInput() {
-            const kana = document.getElementById('add-word-kana').value.trim();
-            const pronInput = document.getElementById('add-word-pron');
-            pronInput.value = kana;
-        }
-
-        function autoGenerateExampleSentence() {
-            const kana = document.getElementById('add-word-kana').value.trim();
-            const meaning = document.getElementById('add-word-meaning').value.trim();
-            const exInput = document.getElementById('add-word-ex');
-            if (kana && meaning && !exInput.value) {
-                exInput.value = `${kana} ( ${meaning} )`;
-            }
-        }
-
-        async function addNewWordFromTeacher() {
-            const kana = document.getElementById('add-word-kana').value.trim();
-            const pron = document.getElementById('add-word-pron').value.trim();
-            const meaning = document.getElementById('add-word-meaning').value.trim();
-            const catSelect = document.getElementById('add-word-cat-select').value;
-            const customCat = document.getElementById('add-word-cat-custom').value.trim();
-            const category = (catSelect === '__NEW__' ? customCat : catSelect) || '일반';
-            const example = document.getElementById('add-word-ex').value.trim();
-
-            if (!kana || !meaning) {
-                showToast('단어와 뜻을 입력해주세요!', 'fa-circle-xmark');
-                return;
-            }
-
-            if (editingWordId) {
-                const idx = wordList.findIndex(w => w.id === editingWordId);
-                if (idx !== -1) {
-                    wordList[idx] = { id: editingWordId, kana, pron: pron || kana, meaning, category, example };
-                    showToast('단어가 수정되었습니다!', 'fa-circle-check');
-                }
-            } else {
-                wordList.push({ id: Date.now(), kana, pron: pron || kana, meaning, category, example });
-                showToast('새 단어가 추가되었습니다!', 'fa-circle-check');
-            }
-
-            await saveWordsToGAS();
-            cancelEditTeacherWord();
-            renderTeacherWordTable();
-            populateTeacherCategoryDropdown();
-            populateGlobalCategoryDropdown();
-            updateFlashcardUI();
-        }
-
-        function editWordByTeacher(id) {
-            const word = wordList.find(w => w.id === id);
-            if (!word) return;
-
-            editingWordId = id;
-            document.getElementById('teacher-form-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-500 me-1"></i>단어 수정하기`;
-            document.getElementById('add-word-kana').value = word.kana;
-            document.getElementById('add-word-pron').value = word.pron;
-            document.getElementById('add-word-meaning').value = word.meaning;
-            document.getElementById('add-word-ex').value = word.example || '';
-
-            const select = document.getElementById('add-word-cat-select');
-            populateTeacherCategoryDropdown();
-            select.value = word.category;
-
-            document.getElementById('add-word-submit-btn').innerText = '단어 수정 저장';
-            document.getElementById('add-word-cancel-btn').classList.remove('hidden');
-        }
-
-        function cancelEditTeacherWord() {
-            editingWordId = null;
-            document.getElementById('teacher-form-title').innerHTML = `<i class="fa-solid fa-plus-circle text-pink-500 me-1"></i>새 단어 추가하기`;
-            document.getElementById('add-word-kana').value = '';
-            document.getElementById('add-word-pron').value = '';
-            document.getElementById('add-word-meaning').value = '';
-            document.getElementById('add-word-ex').value = '';
-            document.getElementById('add-word-submit-btn').innerText = '단어장에 추가하기';
-            document.getElementById('add-word-cancel-btn').classList.add('hidden');
-        }
-
-        async function deleteWordByTeacher(id) {
-            if (confirm('이 단어를 삭제하시겠습니까?')) {
-                wordList = wordList.filter(w => w.id !== id);
-                await saveWordsToGAS();
-                renderTeacherWordTable();
-                populateGlobalCategoryDropdown();
-                updateFlashcardUI();
-                showToast('단어가 삭제되었습니다.', 'fa-trash');
-            }
-        }
-
-        function renderTeacherWordTable() {
-            const tbody = document.getElementById('teacher-word-table-body');
-            document.getElementById('teacher-word-count').innerText = wordList.length;
-            tbody.innerHTML = '';
-
-            wordList.forEach(w => {
+            <button id="tab-btn-flashcards" onclick="switchWordTab('flashcards')"
